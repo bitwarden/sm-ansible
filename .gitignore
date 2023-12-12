@@ -1,5 +1,6 @@
 # General
 .DS_Store
+.env
 Thumbs.db
 
 # IDEs and editors
@@ -12,7 +13,7 @@ Thumbs.db
 *.sublime-workspace
 
 # Visual Studio Code
-.vscode/*
+.vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
@@ -22,3 +23,10 @@ Thumbs.db
 # Node
 node_modules
 npm-debug.log
+
+# Python
+.venv*
+__pycache__
+
+# Vagrant
+.vagrant/
