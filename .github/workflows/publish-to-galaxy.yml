@@ -1,0 +1,32 @@
+name: Publish to Ansible Galaxy
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Retrieve secrets from Secrets Manager
+        uses: bitwarden/sm-action@30880c0f7cc86223557d254e39bb0a5b2fe20128 # v1.0.1
+        with:
+          access_token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            dc3dc07b-1bbe-4ca6-bb16-b0d500fd1b71 > GALAXY_API_KEY
+
+      - name: Publish to Ansible Galaxy
+        uses: ansible/ansible-publish-action@a56a0328c92c1d4feedf5bd7f7cf7ec7a4ae3f09 # v1.0.0
+        with:
+          api_key: ${{ env.GALAXY_API_KEY }}
+          src_path: .

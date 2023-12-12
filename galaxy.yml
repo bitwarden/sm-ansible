@@ -1,0 +1,40 @@
+namespace: bitwarden
+name: bitwarden_sm
+version: 0.0.1
+readme: README.md
+authors:
+  - 
+description: This is a Collection of the Hello Ansible role.
+license: GPL-3.0-or-later
+tags:
+  - access
+  - account
+  - bitwarden
+  - credential
+  - identity
+  - secret
+  - security
+  - privileged
+  - vault
+  - devops
+repository: https://github.com/bitwarden/sm-ansible
+documentation: https://bitwarden.com/help
+homepage: https://bitwarden.com/products/secrets-manager
+issues: https://github.com/bitwarden/sm-ansible/issues
+build_ignore:
+  - .editorconfig
+  - .env
+  - .git
+  - .gitignore
+  - .gitattributes
+  - .github
+  - .husky
+  - .idea
+  - .vagrant
+  - .venv
+  - .vscode
+  - __pycache__
+  - ansible.cfg
+  - package.json
+  - package-lock.json
+  - tests
