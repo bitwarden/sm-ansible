@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-# (c) 2023, Bitwarden <support@bitwarden.com>
-# The LICENSE_NAME (see LICENSE or
-# https://link-to-license.org/)
-#
+# (c) 2023, Bitwarden <hello@bitwarden.com>
+# Licensed under the GPL-3.0-or-later
+
 from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
@@ -137,11 +136,10 @@ class LookupModule(LookupBase):
 
 if __name__ == "__main__":
     LookupModule().run(
-            sys.argv[1:],
-            None,
-            field="value",
-            base_url=BITWARDEN_BASE_URL,
-            api_url=BITWARDEN_API_URL,
-            identity_url=BITWARDEN_IDENTITY_URL,
-        )
-
+        sys.argv[1:],
+        None,
+        field="value",
+        base_url=BITWARDEN_BASE_URL,
+        api_url=BITWARDEN_API_URL,
+        identity_url=BITWARDEN_IDENTITY_URL,
+    )
