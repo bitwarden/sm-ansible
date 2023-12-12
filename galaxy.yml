@@ -3,8 +3,8 @@ name: bitwarden_sm
 version: 0.0.1
 readme: README.md
 authors:
-  - 
-description: This is a Collection of the Hello Ansible role.
+  - Bitwarden <hello@bitwarden.com>
+description: This is a Collection of the Bitwarden Secrets Manager lookup plugin.
 license: GPL-3.0-or-later
 tags:
   - access
