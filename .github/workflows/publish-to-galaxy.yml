@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Retrieve secrets from Secrets Manager
-        uses: bitwarden/sm-action@30880c0f7cc86223557d254e39bb0a5b2fe20128 # v1.0.1
+        uses: bitwarden/sm-action@92d1d6a4f26a89a8191c83ab531a53544578f182 # v2.0.0
         with:
           access_token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
