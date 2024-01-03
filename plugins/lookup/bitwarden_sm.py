@@ -121,7 +121,7 @@ class LookupModule(LookupBase):
                     "apiUrl": api_url,
                     "deviceType": DeviceType.SDK,
                     "identityUrl": identity_url,
-                    "userAgent": "Python",
+                    "userAgent": "bitwarden/sm-ansible",
                 }
             )
         )
