@@ -7,8 +7,8 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from ansible.errors import AnsibleError, AnsibleLookupError
 from ansible.plugins.lookup import LookupBase
-from ansible.errors import AnsibleError
 
 import os
 import sys
@@ -126,12 +126,18 @@ class LookupModule(LookupBase):
             )
         )
 
-        client.access_token_login(access_token)
+        try:
+            client.access_token_login(access_token)
 
-        secret: SecretResponse = client.secrets().get(secret_id)
-        secret_data: str = secret.to_dict()["data"][field]
+            secret: SecretResponse = client.secrets().get(secret_id)
+            secret_data: str = secret.to_dict()["data"][field]
 
-        return [secret_data]
+            return [secret_data]
+        except Exception:
+            raise AnsibleLookupError(
+                "The secret provided could not be found. Please ensure that the service "
+                "account has access to the secret UUID provided."
+            )
 
 
 if __name__ == "__main__":
