@@ -12,6 +12,8 @@ from ansible.plugins.lookup import LookupBase
 
 import os
 import sys
+from urllib.parse import urlparse
+import uuid
 
 try:
     from bitwarden_sdk import (
@@ -88,6 +90,36 @@ BITWARDEN_API_URL: str = "https://vault.bitwarden.com/api"
 BITWARDEN_IDENTITY_URL: str = "https://vault.bitwarden.com/identity"
 
 
+def is_url(url: str) -> bool:
+    try:
+        result: urlparse = urlparse(url)
+        return all([result.scheme in ["https"], result.netloc])
+    except ValueError:
+        return False
+
+
+def is_valid_field(field: str) -> bool:
+    valid_fields = [
+        "id",
+        "organizationId",
+        "projectId",
+        "key",
+        "value",
+        "note",
+        "name",
+        "creationDate",
+        "revisionDate",
+    ]
+    return field in valid_fields
+
+
+def validate_url(url: str, url_type: str):
+    if not is_url(url):
+        raise AnsibleError(
+            f"Invalid {url_type} URL, '{url}'. Update this value to be a valid HTTPS URL"
+        )
+
+
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs) -> list[str]:
         if not terms:
@@ -111,9 +143,24 @@ class LookupModule(LookupBase):
                 kwargs.get("identity_url") or BITWARDEN_IDENTITY_URL
             ).rstrip("/")
 
+        validate_url(base_url, "base")
+        validate_url(api_url, "API")
+        validate_url(identity_url, "Identity")
+
         access_token: str = os.getenv("BWS_ACCESS_TOKEN")
         secret_id: str = kwargs.get("secret_id")
         field: str = kwargs.get("field", "value")
+
+        try:
+            uuid.UUID(secret_id)
+        except ValueError as e:
+            raise AnsibleError("Invalid secret_id. It must be a valid UUID") from e
+
+        if not is_valid_field(field):
+            raise AnsibleError(
+                "Invalid field. Update this value to be one of the following: "
+                "id, organizationId, projectId, key, value, note, name, creationDate, revisionDate"
+            )
 
         client: BitwardenClient = BitwardenClient(
             client_settings_from_dict(
@@ -133,10 +180,11 @@ class LookupModule(LookupBase):
             secret_data: str = secret.to_dict()["data"][field]
 
             return [secret_data]
+
         except Exception:
             raise AnsibleLookupError(
                 "The secret provided could not be found. Please ensure that the service "
-                "account has access to the secret UUID provided."
+                "account has access to the secret UUID provided"
             )
 
 
