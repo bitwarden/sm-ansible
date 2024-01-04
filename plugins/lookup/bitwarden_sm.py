@@ -154,7 +154,7 @@ class LookupModule(LookupBase):
         try:
             uuid.UUID(secret_id)
         except ValueError as e:
-            raise AnsibleError("Invalid secret_id. It must be a valid UUID") from e
+            raise AnsibleError("Invalid secret ID. The secret ID must be a UUID") from e
 
         if not is_valid_field(field):
             raise AnsibleError(
