@@ -122,8 +122,18 @@ def validate_url(url: str, url_type: str):
 
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs) -> list[str]:
+        self.process_terms(terms, kwargs)
+        base_url, api_url, identity_url = self.get_urls(kwargs)
+        self.validate_urls(base_url, api_url, identity_url)
+        access_token, secret_id, field = self.get_env_and_args(kwargs)
+        return self.get_secret_data(
+            access_token, secret_id, field, api_url, identity_url
+        )
+
+    @staticmethod
+    def process_terms(terms, kwargs):
         if not terms:
-            raise AnsibleError("No secret id provided.")
+            raise AnsibleError("No secret ID provided")
 
         for term in terms:
             if "=" in term:
@@ -132,36 +142,50 @@ class LookupModule(LookupBase):
             else:
                 kwargs["secret_id"] = term
 
-        base_url: str = (kwargs.get("base_url") or BITWARDEN_BASE_URL).rstrip("/")
-
+    @staticmethod
+    def get_urls(kwargs) -> tuple[str, str, str]:
+        base_url: str = kwargs.get("base_url", BITWARDEN_BASE_URL).rstrip("/")
         if base_url != BITWARDEN_BASE_URL:
-            api_url: str = base_url + "/api"
-            identity_url: str = base_url + "/identity"
+            api_url: str = f"{base_url}/api"
+            identity_url: str = f"{base_url}/identity"
         else:
-            api_url: str = (kwargs.get("api_url") or BITWARDEN_API_URL).rstrip("/")
-            identity_url: str = (
-                kwargs.get("identity_url") or BITWARDEN_IDENTITY_URL
+            api_url: str = kwargs.get("api_url", BITWARDEN_API_URL).rstrip("/")
+            identity_url: str = kwargs.get(
+                "identity_url", BITWARDEN_IDENTITY_URL
             ).rstrip("/")
+        return base_url, api_url, identity_url
 
+    def get_env_and_args(self, kwargs) -> tuple[str, str, str]:
+        access_token: str = os.getenv("BWS_ACCESS_TOKEN")
+        secret_id: str = kwargs.get("secret_id")
+        field: str = kwargs.get("field", "value")
+        self.validate_secret_id(secret_id)
+        self.validate_field(field)
+        return access_token, secret_id, field
+
+    @staticmethod
+    def validate_urls(base_url, api_url, identity_url):
         validate_url(base_url, "base")
         validate_url(api_url, "API")
         validate_url(identity_url, "Identity")
 
-        access_token: str = os.getenv("BWS_ACCESS_TOKEN")
-        secret_id: str = kwargs.get("secret_id")
-        field: str = kwargs.get("field", "value")
-
+    @staticmethod
+    def validate_secret_id(secret_id):
         try:
             uuid.UUID(secret_id)
         except ValueError as e:
             raise AnsibleError("Invalid secret ID. The secret ID must be a UUID") from e
 
+    @staticmethod
+    def validate_field(field):
         if not is_valid_field(field):
             raise AnsibleError(
                 "Invalid field. Update this value to be one of the following: "
                 "id, organizationId, projectId, key, value, note, name, creationDate, revisionDate"
             )
 
+    @staticmethod
+    def get_secret_data(access_token, secret_id, field, api_url, identity_url):
         client: BitwardenClient = BitwardenClient(
             client_settings_from_dict(
                 {
@@ -175,10 +199,8 @@ class LookupModule(LookupBase):
 
         try:
             client.access_token_login(access_token)
-
             secret: SecretResponse = client.secrets().get(secret_id)
             secret_data: str = secret.to_dict()["data"][field]
-
             return [secret_data]
 
         except Exception:
