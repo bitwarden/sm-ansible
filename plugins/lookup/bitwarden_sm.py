@@ -9,6 +9,9 @@ __metaclass__ = type
 
 from ansible.errors import AnsibleError, AnsibleLookupError
 from ansible.plugins.lookup import LookupBase
+from ansible.utils.display import Display
+
+display = Display()
 
 import os
 import sys
@@ -168,12 +171,14 @@ class LookupModule(LookupBase):
 
     @staticmethod
     def validate_urls(base_url, api_url, identity_url):
+        display.v("Parsing Bitwarden environment URL")
         validate_url(base_url, "base")
         validate_url(api_url, "API")
         validate_url(identity_url, "Identity")
 
     @staticmethod
     def validate_secret_id(secret_id):
+        display.v("Parsing secret ID")
         try:
             uuid.UUID(secret_id)
         except ValueError as e:
@@ -181,6 +186,7 @@ class LookupModule(LookupBase):
 
     @staticmethod
     def validate_field(field):
+        display.v("Validating field argument")
         if not is_valid_field(field):
             raise AnsibleError(
                 "Invalid field. Update this value to be one of the following: "
@@ -189,6 +195,7 @@ class LookupModule(LookupBase):
 
     @staticmethod
     def get_secret_data(access_token, secret_id, field, api_url, identity_url):
+        display.v("Authenticating with Bitwarden")
         client: BitwardenClient = BitwardenClient(
             client_settings_from_dict(
                 {
