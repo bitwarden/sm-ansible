@@ -9,9 +9,6 @@ __metaclass__ = type
 
 from ansible.errors import AnsibleError, AnsibleLookupError
 from ansible.plugins.lookup import LookupBase
-from ansible.utils.display import Display
-
-display = Display()
 
 import os
 import sys
