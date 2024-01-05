@@ -125,9 +125,8 @@ class LookupModule(LookupBase):
         base_url, api_url, identity_url = self.get_urls(kwargs)
         self.validate_urls(base_url, api_url, identity_url)
         access_token, secret_id, field = self.get_env_and_args(kwargs)
-        return self.get_secret_data(
-            access_token, secret_id, field, api_url, identity_url
-        )
+        self.validate_args(secret_id, field)
+        return self.get_secret_data(access_token, secret_id, field, api_url, identity_url)
 
     @staticmethod
     def process_terms(terms, kwargs):
@@ -154,13 +153,16 @@ class LookupModule(LookupBase):
             ).rstrip("/")
         return base_url, api_url, identity_url
 
-    def get_env_and_args(self, kwargs) -> tuple[str, str, str]:
+    @staticmethod
+    def get_env_and_args(kwargs) -> tuple[str, str, str]:
         access_token: str = os.getenv("BWS_ACCESS_TOKEN")
         secret_id: str = kwargs.get("secret_id")
         field: str = kwargs.get("field", "value")
+        return access_token, secret_id, field
+
+    def validate_args(self, secret_id, field):
         self.validate_secret_id(secret_id)
         self.validate_field(field)
-        return access_token, secret_id, field
 
     @staticmethod
     def validate_urls(base_url, api_url, identity_url):
