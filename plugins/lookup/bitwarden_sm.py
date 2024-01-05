@@ -126,7 +126,9 @@ class LookupModule(LookupBase):
         self.validate_urls(base_url, api_url, identity_url)
         access_token, secret_id, field = self.get_env_and_args(kwargs)
         self.validate_args(secret_id, field)
-        return self.get_secret_data(access_token, secret_id, field, api_url, identity_url)
+        return self.get_secret_data(
+            access_token, secret_id, field, api_url, identity_url
+        )
 
     @staticmethod
     def process_terms(terms, kwargs):
