@@ -106,7 +106,6 @@ def is_valid_field(field: str) -> bool:
         "key",
         "value",
         "note",
-        "name",
         "creationDate",
         "revisionDate",
     ]
@@ -181,7 +180,7 @@ class LookupModule(LookupBase):
         if not is_valid_field(field):
             raise AnsibleError(
                 "Invalid field. Update this value to be one of the following: "
-                "id, organizationId, projectId, key, value, note, name, creationDate, revisionDate"
+                "id, organizationId, projectId, key, value, note, creationDate, revisionDate"
             )
 
     @staticmethod
