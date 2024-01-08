@@ -1,0 +1,18 @@
+---
+- name: Test Bitwarden lookup plugin
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    secret: "{{ lookup('bitwarden_sm', '9165d7a8-2c22-476e-8add-b0d50162c5cc' ) }}"
+    secret_with_field: "{{ lookup('bitwarden_sm', '9165d7a8-2c22-476e-8add-b0d50162c5cc', field='note' ) }}"
+
+  tasks:
+    - name: Echo secret
+      ansible.builtin.debug:
+        msg: "Secret value is: {{ secret }}"
+
+    - name: Echo secret with field
+      ansible.builtin.debug:
+        msg: "Secret with field is: {{ secret_with_field }}"

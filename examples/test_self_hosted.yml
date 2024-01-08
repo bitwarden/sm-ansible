@@ -1,0 +1,17 @@
+---
+- name: Test Self-hosted Bitwarden lookup plugin
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    secret_from_other_server: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', base_url='https://bitwarden.example.com' ) }}"
+    secret_advanced: >-
+      {{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173',
+        api_url='https://bitwarden.example.com/api',
+        identity_url='https://bitwarden.example.com/identity' ) }}
+
+  tasks:
+    - name: Echo secret from other server
+      ansible.builtin.debug:
+        msg: "Secret value from other server is: {{ secret_from_other_server }}"
