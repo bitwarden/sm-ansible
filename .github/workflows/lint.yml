@@ -1,0 +1,28 @@
+---
+name: Lint
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Set up Node
+        uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
+        with:
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+          node-version: "20"
+
+      - name: Run linter
+        run: |
+          npm ci
+          npm run lint
