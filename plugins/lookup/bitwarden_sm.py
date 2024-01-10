@@ -10,6 +10,7 @@ __metaclass__ = type
 from ansible.errors import AnsibleError, AnsibleLookupError
 from ansible.plugins.lookup import LookupBase
 
+import base64
 import os
 import sys
 from urllib.parse import urlparse
@@ -119,6 +120,70 @@ def validate_url(url: str, url_type: str):
         )
 
 
+class AccessTokenInvalidError(Exception):
+    pass
+
+
+class AccessToken:
+    def __init__(self, access_token: str):
+        self._access_token = access_token
+        self._access_token_version = None
+        self._access_token_id = None
+        self._client_secret = None
+        self._encryption_key = None
+        self._parse_access_token()
+
+    def _parse_access_token(self):
+        try:
+            first_part, encryption_key = self._access_token.split(':')
+            version, access_token_id, client_secret = first_part.split('.')
+        except ValueError:
+            raise AccessTokenInvalidError("Invalid access token format")
+
+        if version != "0":
+            raise AccessTokenInvalidError("Wrong version")
+
+        try:
+            uuid.UUID(access_token_id)
+        except ValueError:
+            raise AccessTokenInvalidError("Invalid UUID")
+
+        try:
+            self._encryption_key = base64.b64decode(encryption_key)
+        except ValueError:
+            raise AccessTokenInvalidError("Invalid base64")
+
+        if len(self._encryption_key) != 16:
+            raise AccessTokenInvalidError("Invalid base64 length")
+
+        self._access_token_version = version
+        self._access_token_id = access_token_id
+        self._client_secret = client_secret
+
+    @property
+    def access_token_version(self) -> str:
+        return self._access_token_version
+
+    @property
+    def access_token_id(self) -> str:
+        return self._access_token_id
+
+    @property
+    def client_secret(self) -> str:
+        return self._client_secret
+
+    @property
+    def encryption_key(self) -> bytes:
+        return self._encryption_key
+
+    @property
+    def str(self) -> str:
+        return self._access_token
+
+    def __str__(self) -> str:
+        return self._access_token
+
+
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs) -> list[str]:
         self.process_terms(terms, kwargs)
@@ -127,7 +192,7 @@ class LookupModule(LookupBase):
         access_token, secret_id, field = self.get_env_and_args(kwargs)
         self.validate_args(secret_id, field)
         return self.get_secret_data(
-            access_token, secret_id, field, api_url, identity_url
+            access_token, secret_id, field, base_url, api_url, identity_url
         )
 
     @staticmethod
@@ -137,7 +202,7 @@ class LookupModule(LookupBase):
 
         for term in terms:
             if "=" in term:
-                key, value = term.split("=")
+                key, value = term.split("=", 1)
                 kwargs[key] = value
             else:
                 kwargs["secret_id"] = term
@@ -156,10 +221,13 @@ class LookupModule(LookupBase):
         return base_url, api_url, identity_url
 
     @staticmethod
-    def get_env_and_args(kwargs) -> tuple[str, str, str]:
-        access_token: str = os.getenv("BWS_ACCESS_TOKEN")
+    def get_env_and_args(kwargs) -> tuple[AccessToken, str, str]:
+        access_token: AccessToken = AccessToken(kwargs.get("access_token") or os.getenv("BWS_ACCESS_TOKEN"))
         secret_id: str = kwargs.get("secret_id")
         field: str = kwargs.get("field", "value")
+        # display.vvv(f"Access token: {access_token}")
+        display.vv(f"Secret ID: {secret_id}")
+        display.vv(f"Field: {field}")
         return access_token, secret_id, field
 
     def validate_args(self, secret_id, field):
@@ -191,7 +259,7 @@ class LookupModule(LookupBase):
             )
 
     @staticmethod
-    def get_secret_data(access_token, secret_id, field, api_url, identity_url):
+    def get_secret_data(access_token, secret_id, field, base_url, api_url, identity_url):
         display.v("Authenticating with Bitwarden")
         client: BitwardenClient = BitwardenClient(
             client_settings_from_dict(
@@ -205,7 +273,7 @@ class LookupModule(LookupBase):
         )
 
         try:
-            client.access_token_login(access_token)
+            client.access_token_login(access_token.str)
             secret: SecretResponse = client.secrets().get(secret_id)
             secret_data: str = secret.to_dict()["data"][field]
             return [secret_data]
@@ -214,6 +282,8 @@ class LookupModule(LookupBase):
             raise AnsibleLookupError(
                 "The secret provided could not be found. Please ensure that the service "
                 "account has access to the secret UUID provided"
+                # ". You can check this in the Web Vault, or by running: "
+                # f"`bws secret get {secret_id} -u {base_url} -t {access_token}`"
             )
 
 
