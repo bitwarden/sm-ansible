@@ -135,8 +135,8 @@ class AccessToken:
 
     def _parse_access_token(self):
         try:
-            first_part, encryption_key = self._access_token.split(':')
-            version, access_token_id, client_secret = first_part.split('.')
+            first_part, encryption_key = self._access_token.split(":")
+            version, access_token_id, client_secret = first_part.split(".")
         except ValueError:
             raise AccessTokenInvalidError("Invalid access token format")
 
@@ -222,7 +222,9 @@ class LookupModule(LookupBase):
 
     @staticmethod
     def get_env_and_args(kwargs) -> tuple[AccessToken, str, str]:
-        access_token: AccessToken = AccessToken(kwargs.get("access_token") or os.getenv("BWS_ACCESS_TOKEN"))
+        access_token: AccessToken = AccessToken(
+            kwargs.get("access_token") or os.getenv("BWS_ACCESS_TOKEN")
+        )
         secret_id: str = kwargs.get("secret_id")
         field: str = kwargs.get("field", "value")
         # display.vvv(f"Access token: {access_token}")
@@ -259,7 +261,9 @@ class LookupModule(LookupBase):
             )
 
     @staticmethod
-    def get_secret_data(access_token, secret_id, field, base_url, api_url, identity_url):
+    def get_secret_data(
+        access_token, secret_id, field, base_url, api_url, identity_url
+    ):
         display.v("Authenticating with Bitwarden")
         client: BitwardenClient = BitwardenClient(
             client_settings_from_dict(
@@ -288,12 +292,14 @@ class LookupModule(LookupBase):
 
 
 if __name__ == "__main__":
-    print(LookupModule().run(
-        sys.argv[1:],
-        None,
-        field="value",
-        base_url=BITWARDEN_BASE_URL,
-        api_url=BITWARDEN_API_URL,
-        identity_url=BITWARDEN_IDENTITY_URL,
-        access_token=None,
-    )[0])
+    print(
+        LookupModule().run(
+            sys.argv[1:],
+            None,
+            field="value",
+            base_url=BITWARDEN_BASE_URL,
+            api_url=BITWARDEN_API_URL,
+            identity_url=BITWARDEN_IDENTITY_URL,
+            access_token=None,
+        )[0]
+    )
