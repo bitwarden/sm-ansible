@@ -218,11 +218,12 @@ class LookupModule(LookupBase):
 
 
 if __name__ == "__main__":
-    LookupModule().run(
+    print(LookupModule().run(
         sys.argv[1:],
         None,
         field="value",
         base_url=BITWARDEN_BASE_URL,
         api_url=BITWARDEN_API_URL,
         identity_url=BITWARDEN_IDENTITY_URL,
-    )
+        access_token=None,
+    )[0])
