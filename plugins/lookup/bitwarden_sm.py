@@ -55,7 +55,7 @@ options:
     required: true
     access_token:
       description: 'access token to use (default: BWS_ACCESS_TOKEN)'
-      required: false
+      required: true
     base_url:
       description: 'base url to use (default: https://vault.bitwarden.com)'
       required: false
