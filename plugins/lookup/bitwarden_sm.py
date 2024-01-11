@@ -7,14 +7,23 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from ansible.errors import AnsibleError, AnsibleLookupError
-from ansible.plugins.lookup import LookupBase
-
 import base64
 import os
 import sys
+from pathlib import Path
 from urllib.parse import urlparse
 import uuid
+
+from ansible.errors import AnsibleError, AnsibleLookupError
+from ansible.plugins.lookup import LookupBase
+
+try:
+    # noinspection PyCompatibility
+    from __main__ import display
+except ImportError:
+    from ansible.utils.display import Display
+
+    display = Display()
 
 try:
     from bitwarden_sdk import (
@@ -32,14 +41,6 @@ if BW_SDK_IMPORT_ERROR:
     raise AnsibleError(
         "The bitwarden_sm lookup plugin requires the following python modules: 'bitwarden_sdk'."
     )
-
-try:
-    # noinspection PyCompatibility
-    from __main__ import display
-except ImportError:
-    from ansible.utils.display import Display
-
-    display = Display()
 
 DOCUMENTATION = """
 name: bitwarden_sm
@@ -98,12 +99,40 @@ _list:
   elements: str
 """
 
+# default URLs
 BITWARDEN_BASE_URL: str = "https://vault.bitwarden.com"
 BITWARDEN_API_URL: str = "https://vault.bitwarden.com/api"
 BITWARDEN_IDENTITY_URL: str = "https://vault.bitwarden.com/identity"
 
+# errors
+NO_SECRET_ID_ERROR: str = "No secret ID provided"
+INVALID_FIELD_ERROR: str = (
+    "Invalid field: '{}'. Update this value to be one of the following: "
+    "id, organizationId, projectId, key, value, note, creationDate, revisionDate"
+)
+INVALID_SECRET_ID_ERROR: str = "Invalid secret ID, '{}'. The secret ID must be a UUID"
+INVALID_URL_ERROR: str = "Invalid {} URL, '{}'. Update this value to be a HTTPS URL"
+SECRET_LOOKUP_ERROR: str = (
+    "The requested secret could not be found: '{}' "
+    "Please ensure that the service account has access to the secret UUID provided. "
+    "Original error: {}"
+)
+STATE_FILE_DIR_ERROR: str = (
+    "The state file directory specified could not be created: '{}' "
+    "Please ensure that you have permission to create a directory at {}"
+)
+
 
 def is_url(url: str) -> bool:
+    """Validate a URL.
+
+    Args:
+        url: The URL to validate.
+
+    Returns:
+        True if the URL is valid, False, otherwise.
+    """
+
     try:
         result: urlparse = urlparse(url)
         return all([result.scheme in ["https"], result.netloc])
@@ -112,6 +141,15 @@ def is_url(url: str) -> bool:
 
 
 def is_valid_field(field: str) -> bool:
+    """Validate a secret field.
+
+    Args:
+        field: The field to validate.
+
+    Returns:
+        True if the field is valid, False, otherwise.
+    """
+
     valid_fields = [
         "id",
         "organizationId",
@@ -125,11 +163,43 @@ def is_valid_field(field: str) -> bool:
     return field in valid_fields
 
 
-def validate_url(url: str, url_type: str):
+def validate_url(url: str, url_type: str) -> None:
+    """Validate a URL.
+
+    Args:
+        url: The URL to validate.
+        url_type: The type of the URL (used in error messages).
+
+    Raises:
+        AnsibleError: If the URL is not valid.
+    """
+
     if not is_url(url):
+        raise AnsibleError(INVALID_URL_ERROR.format(url_type, url))
+
+
+def create_state_dir(state_file_dir: str):
+    """Create the state file directory.
+
+    Args:
+        state_file_dir: The directory to create.
+
+    Raises:
+        AnsibleError: If the directory cannot be created.
+    """
+
+    try:
+        display.vv(f"Creating state directory: {state_file_dir}")
+        state_dir = Path(state_file_dir)
+        state_dir.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
         raise AnsibleError(
-            f"Invalid {url_type} URL, '{url}'. Update this value to be a valid HTTPS URL"
+            f"You do not have permission to create a directory at {state_file_dir}"
         )
+    except OSError as e:
+        raise AnsibleError(f"Could not create directory: {e}")
+    except Exception as e:
+        raise AnsibleError(f"An unexpected error occurred: {e}")
 
 
 class AccessTokenInvalidError(Exception):
@@ -200,29 +270,79 @@ class AccessToken:
 
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs) -> list[str]:
-        self.process_terms(terms, kwargs)
-        base_url, api_url, identity_url = self.get_urls(kwargs)
-        self.validate_urls(base_url, api_url, identity_url)
-        access_token, secret_id, field = self.get_env_and_args(kwargs)
+        """
+        The main method that is called when the lookup plugin is called from Ansible.
+
+        "{{ lookup('bitwarden_sm', '877d8c62-e0eb-42b5-a22a-79be6c373bd6') }}"
+
+        Args:
+            terms (list): The list of terms passed to the lookup plugin.
+            variables (dict, optional): Any variables passed to the lookup plugin.
+            **kwargs: Any additional key-value arguments.
+
+        Returns:
+            list: The result of the lookup plugin.
+        """
+
+        kv_args = LookupModule.parse_args(terms)
+
+        # Get the arguments
+        secret_id = kv_args.get("secret_id")
+        field = kv_args.get("field") or "value"
+        api_url = kv_args.get("api_url") or BITWARDEN_API_URL
+        identity_url = kv_args.get("identity_url") or BITWARDEN_IDENTITY_URL
+        access_token = AccessToken(
+            kv_args.get("access_token") or os.getenv("BWS_ACCESS_TOKEN")
+        )
+        state_file_dir = kv_args.get("state_file_dir")
+
         self.validate_args(secret_id, field)
         return self.get_secret_data(
-            access_token, secret_id, field, base_url, api_url, identity_url
+            access_token,
+            secret_id,
+            field,
+            api_url,
+            identity_url,
+            state_file_dir,
         )
 
     @staticmethod
-    def process_terms(terms, kwargs):
-        if not terms:
-            raise AnsibleError("No secret ID provided")
+    def parse_args(args) -> dict:
+        """
+        Parse key-value arguments.
 
-        for term in terms:
-            if "=" in term:
-                key, value = term.split("=", 1)
-                kwargs[key] = value
+        Args:
+            args (list): The arguments to parse.
+
+        Returns:
+            dict: A dictionary where the keys are the argument names and the values are the argument values.
+        """
+        kv_args = {}
+
+        for arg in args:
+            if "=" in arg:
+                key, value = arg.split("=", 1)
+                kv_args[key] = value
             else:
-                kwargs["secret_id"] = term
+                kv_args["secret_id"] = arg
+
+        if not kv_args.get("secret_id"):
+            raise AnsibleError(NO_SECRET_ID_ERROR)
+
+        return kv_args
 
     @staticmethod
     def get_urls(kwargs) -> tuple[str, str, str]:
+        """
+        Get the Bitwarden environment URLs.
+
+        Args:
+            kwargs (dict): The kwargs passed to the lookup plugin.
+
+        Returns:
+            tuple[str, str, str]: The base URL, API URL, and Identity URL.
+        """
+
         base_url: str = kwargs.get("base_url", BITWARDEN_BASE_URL).rstrip("/")
         if base_url != BITWARDEN_BASE_URL:
             api_url: str = f"{base_url}/api"
@@ -235,49 +355,119 @@ class LookupModule(LookupBase):
         return base_url, api_url, identity_url
 
     @staticmethod
-    def get_env_and_args(kwargs) -> tuple[AccessToken, str, str]:
+    def get_env_and_args(kwargs) -> tuple[AccessToken, str, str, str]:
+        """
+        Get the access token, secret ID, field, and state file directory.
+
+        Args:
+            kwargs (dict): The kwargs passed to the lookup plugin.
+
+        Returns:
+            tuple[AccessToken, str, str, str]: The access token, secret ID, field, and state file directory.
+        """
+
         access_token: AccessToken = AccessToken(
             kwargs.get("access_token") or os.getenv("BWS_ACCESS_TOKEN")
         )
         secret_id: str = kwargs.get("secret_id")
         field: str = kwargs.get("field", "value")
-        # display.vvv(f"Access token: {access_token}")
+        state_file_dir: str = kwargs.get("state_file_dir")
         display.vv(f"Secret ID: {secret_id}")
         display.vv(f"Field: {field}")
-        return access_token, secret_id, field
+        display.vv(f"State file dir: {state_file_dir}")
+        return access_token, secret_id, field, state_file_dir
 
-    def validate_args(self, secret_id, field):
+    @staticmethod
+    def get_state_file_path(state_file_dir: str, access_token_id: str) -> str:
+        """
+        Get the state file path.
+
+        Args:
+            state_file_dir (str): The state file directory.
+            access_token_id (str): The access token ID.
+
+        Returns:
+            str: The state file path.
+        """
+
+        return os.path.join(state_file_dir, access_token_id)
+
+    def validate_args(self, secret_id, field) -> None:
         self.validate_secret_id(secret_id)
         self.validate_field(field)
 
     @staticmethod
-    def validate_urls(base_url, api_url, identity_url):
+    def validate_urls(base_url, api_url, identity_url) -> None:
         display.v("Parsing Bitwarden environment URL")
         validate_url(base_url, "base")
         validate_url(api_url, "API")
         validate_url(identity_url, "Identity")
 
     @staticmethod
-    def validate_secret_id(secret_id):
+    def validate_secret_id(secret_id) -> None:
+        """
+        Check that the secret_id is a valid UUID.
+
+        Args:
+            secret_id (str): The secret_id to validate.
+
+        Raises:
+            AnsibleError: If the secret_id is not a valid UUID.
+        """
+
         display.v("Parsing secret ID")
         try:
             uuid.UUID(secret_id)
         except ValueError as e:
-            raise AnsibleError("Invalid secret ID. The secret ID must be a UUID") from e
+            display.error(INVALID_SECRET_ID_ERROR.format(secret_id))
+            raise AnsibleError(INVALID_SECRET_ID_ERROR.format(secret_id)) from e
 
     @staticmethod
-    def validate_field(field):
+    def validate_field(field) -> None:
+        """
+        Check that the secret field is valid.
+
+        Args:
+            field (str): The field to validate.
+
+        Raises:
+            AnsibleError: If the field is not valid.
+        """
+
         display.v("Validating field argument")
         if not is_valid_field(field):
-            raise AnsibleError(
-                "Invalid field. Update this value to be one of the following: "
-                "id, organizationId, projectId, key, value, note, creationDate, revisionDate"
-            )
+            display.error(INVALID_FIELD_ERROR.format(field))
+            raise AnsibleError(INVALID_FIELD_ERROR.format(field))
 
     @staticmethod
     def get_secret_data(
-        access_token, secret_id, field, base_url, api_url, identity_url
-    ):
+        access_token,
+        secret_id,
+        field,
+        api_url,
+        identity_url,
+        state_file_dir,
+    ) -> list[str]:
+        """
+        Retrieves the secret data.
+
+        Args:
+            access_token (AccessToken): The access token.
+            secret_id (str): The secret ID.
+            field (str): The field.
+            api_url (str): The API URL.
+            identity_url (str): The Identity URL.
+            state_file_dir (str): The state file directory.
+
+        Returns:
+            list[str]: The secret data.
+
+        Raises:
+            AnsibleError: If the state file directory cannot be created.
+            AnsibleError: If the secret cannot be found.
+
+        """
+
         display.v("Authenticating with Bitwarden")
         client: BitwardenClient = BitwardenClient(
             client_settings_from_dict(
@@ -291,18 +481,24 @@ class LookupModule(LookupBase):
         )
 
         try:
-            client.access_token_login(access_token.str)
+            if not state_file_dir:
+                client.access_token_login(access_token.str)
+            else:
+                create_state_dir(state_file_dir)
+                state_file = str(Path(state_file_dir, access_token.access_token_id))
+                client.access_token_login(access_token.str, state_file)
+        except AnsibleError as e:
+            display.error(STATE_FILE_DIR_ERROR.format(e, state_file_dir))
+            raise AnsibleError(STATE_FILE_DIR_ERROR.format(e, state_file_dir)) from e
+
+        try:
             secret: SecretResponse = client.secrets().get(secret_id)
             secret_data: str = secret.to_dict()["data"][field]
             return [secret_data]
-
-        except Exception:
-            raise AnsibleLookupError(
-                "The secret provided could not be found. Please ensure that the service "
-                "account has access to the secret UUID provided"
-                # ". You can check this in the Web Vault, or by running: "
-                # f"`bws secret get {secret_id} -u {base_url} -t {access_token}`"
-            )
+        except Exception as e:
+            error_message = f"{SECRET_LOOKUP_ERROR.format(secret_id)}: {e}"
+            display.error(error_message)
+            raise AnsibleLookupError(error_message) from e
 
 
 if __name__ == "__main__":
