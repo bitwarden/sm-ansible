@@ -1,26 +1,29 @@
 {
-  "name": "@bitwarden/template",
+  "name": "@bitwarden/sm-ansible",
   "version": "0.0.0",
-  "description": "Bitwarden Template",
+  "private": true,
+  "description": "Bitwarden Ansible integration",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bitwarden/template.git"
+    "url": "git+https://github.com/bitwarden/sm-ansible.git"
   },
   "author": "Bitwarden Inc. <hello@bitwarden.com> (https://bitwarden.com)",
   "license": "SEE LICENSE IN LICENSE.txt",
   "bugs": {
-    "url": "https://github.com/bitwarden/template/issues"
+    "url": "https://github.com/bitwarden/sm-ansible/issues"
   },
-  "homepage": "https://bitwarden.com",
+  "homepage": "https://github.com/bitwarden/sm-ansible#readme",
   "devDependencies": {
     "husky": "8.0.3",
     "lint-staged": "15.2.0",
-    "prettier": "3.1.0"
+    "prettier": "3.1.1"
   },
   "lint-staged": {
     "*": "prettier --cache --write --ignore-unknown"
   },
   "scripts": {
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "lint": "prettier --check .",
+    "prettier": "prettier --write ."
   }
 }
