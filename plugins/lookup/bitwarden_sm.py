@@ -134,6 +134,8 @@ class AccessToken:
         self._parse_access_token()
 
     def _parse_access_token(self):
+        if not self._access_token:
+            raise AccessTokenInvalidError("No access token provided")
         try:
             first_part, encryption_key = self._access_token.split(":")
             version, access_token_id, client_secret = first_part.split(".")
