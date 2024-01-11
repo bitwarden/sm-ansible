@@ -52,22 +52,28 @@ options:
   _terms:
     description: 'secret id to lookup'
     required: true
-    ansible.builtin.field:
-      description: 'field to return (default: value)'
+    access_token:
+      description: 'access token to use (default: BWS_ACCESS_TOKEN)'
       required: false
-      default: value
-    ansible.builtin.base_url:
+    base_url:
       description: 'base url to use (default: https://vault.bitwarden.com)'
       required: false
       default: https://vault.bitwarden.com
-    ansible.builtin.api_url:
+    api_url:
       description: 'api url to use (default: https://vault.bitwarden.com/api)'
       required: false
       default: https://vault.bitwarden.com/api
-    ansible.builtin.identity_url:
+    identity_url:
       description: 'identity url to use (default: https://vault.bitwarden.com/identity)'
       required: false
       default: https://vault.bitwarden.com/identity
+    state_file_dir:
+      description: 'directory to store state file for authentication'
+      required: false
+    field:
+      description: 'field to return (default: value)'
+      required: false
+      default: value
 """
 
 EXAMPLES = """
@@ -77,6 +83,12 @@ EXAMPLES = """
 - name: Get the note value for a secret
   ansible.builtin.debug:
     msg: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', field='note') }}"
+- name: Lookup a secret using a custom access token
+  ansible.builtin.debug:
+    msg: ""{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', access_token='<your-access-token>') }}"
+- name: Use a state file for authentication
+  ansible.builtin.debug:
+  msg: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', state_file_dir='~/.config/bitwarden-sm') }}"
 """
 
 RETURN = """
