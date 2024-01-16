@@ -26,9 +26,3 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 See
 [running on macos as a control node](https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#running-on-macos-as-a-control-node)
 and [this GitHub issue](https://github.com/ansible/ansible/issues/49207) for more details.
-
-## Execute as a standalone script
-
-```bash
-python ./plugins/lookup/bitwarden_sm.py <secret_id> base_url=<vault_url>
-```
