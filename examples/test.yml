@@ -5,8 +5,14 @@
   gather_facts: false
 
   vars:
-    secret: "{{ lookup('bitwarden_sm', '9165d7a8-2c22-476e-8add-b0d50162c5cc' ) }}"
-    secret_with_field: "{{ lookup('bitwarden_sm', '9165d7a8-2c22-476e-8add-b0d50162c5cc', field='note' ) }}"
+    bws_access_token: "{{ lookup('env', 'BWS_ACCESS_TOKEN') }}"
+    state_file_dir: "{{ '~/.config/bitwarden-sm' | expanduser }}"
+    secret_id: "9165d7a8-2c22-476e-8add-b0d50162c5cc"
+
+    secret: "{{ lookup('bitwarden_sm', secret_id) }}"
+    secret_with_field: "{{ lookup('bitwarden_sm', secret_id, field='note' ) }}"
+    secret_with_access_token: "{{ lookup('bitwarden_sm', secret_id, access_token=bws_access_token ) }}"
+    secret_with_state_file: "{{ lookup('bitwarden_sm', secret_id, state_file_dir=state_file_dir ) }}"
 
   tasks:
     - name: Echo secret
@@ -16,3 +22,11 @@
     - name: Echo secret with field
       ansible.builtin.debug:
         msg: "Secret with field is: {{ secret_with_field }}"
+
+    - name: Echo secret with access token
+      ansible.builtin.debug:
+        msg: "Secret with access token is: {{ secret_with_access_token }}"
+
+    - name: Echo secret with state file
+      ansible.builtin.debug:
+        msg: "Secret with state file is: {{ secret_with_state_file }}"
