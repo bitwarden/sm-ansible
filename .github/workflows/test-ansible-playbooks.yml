@@ -8,6 +8,9 @@ on:
         description: "Branch to test"
         required: true
         default: "main"
+  pull_request:
+    branches:
+      - "*"
 
 jobs:
   test:
@@ -16,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ github.event.inputs.branch || github.head_ref }}
 
       - name: Setup Python
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
