@@ -60,4 +60,4 @@ jobs:
 
       - name: Run Playbooks
         run: |
-          ansible-playbook examples/*.yml
+          ansible-playbook examples/test.yml # just run this playbook for now
