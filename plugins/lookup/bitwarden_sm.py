@@ -184,28 +184,34 @@ class AccessToken:
 
     def _parse_access_token(self):
         if not self._access_token:
+            display.error("No access token provided")
             raise AccessTokenInvalidError("No access token provided")
         try:
             first_part, encryption_key = self._access_token.split(":")
             version, access_token_id, client_secret = first_part.split(".")
         except ValueError:
+            display.error("Invalid access token format")
             raise AccessTokenInvalidError("Invalid access token format")
 
         if version != "0":
-            raise AccessTokenInvalidError("Wrong version")
+            display.error("Wrong access token version")
+            raise AccessTokenInvalidError("Wrong access token version")
 
         try:
             uuid.UUID(access_token_id)
         except ValueError:
-            raise AccessTokenInvalidError("Invalid UUID")
+            display.error("Invalid access token UUID")
+            raise AccessTokenInvalidError("Invalid access token UUID")
 
         try:
             self._encryption_key = base64.b64decode(encryption_key)
         except ValueError:
-            raise AccessTokenInvalidError("Invalid base64")
+            display.error("Invalid access token envryption key. Should be base64-encoded")
+            raise AccessTokenInvalidError("Invalid access token envryption key. Should be base64-encoded")
 
         if len(self._encryption_key) != 16:
-            raise AccessTokenInvalidError("Invalid base64 length")
+            display.error("Invalid base64 length for encryption key")
+            raise AccessTokenInvalidError("Invalid base64 length for encryption key")
 
         self._access_token_version = version
         self._access_token_id = access_token_id
