@@ -28,7 +28,7 @@ jobs:
 
       - name: Install Ansible
         run: |
-          python -m venv .venv
+          python -m venv ${{ github.workspace }}/.venv
           source .venv/bin/activate
           python -m pip install --upgrade pip
           pip install ansible ansible-lint
@@ -51,14 +51,17 @@ jobs:
       - name: Install bitwarden/sdk
         working-directory: sdk/languages/python
         run: |
+          source ${{ github.workspace }}/.venv/bin/activate
           pip install maturin[patchelf]
           maturin develop
 
       - name: Lint
         run: |
+          source ${{ github.workspace }}/.venv/bin/activate
           ansible-playbook --syntax-check examples/*.yml
           ansible-lint examples/*.yml
 
       - name: Run Playbooks
         run: |
+          source ${{ github.workspace }}/.venv/bin/activate
           ansible-playbook examples/test.yml # just run this playbook for now
