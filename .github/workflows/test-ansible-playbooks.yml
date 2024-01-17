@@ -42,12 +42,11 @@ jobs:
           ref: SM-989-create-build-and-publish-pipelines-for-the-python-language-wrapper
           path: sdk
 
-      - name: Retrieve schemas from bitwarden/sdk
-        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
-        with:
-          name: schemas.py
-          repository: bitwarden/sdk
-          path: sdk/languages/python/bitwarden_sdk/schemas.py
+      - name: Generate schemas.py
+        working-directory: sdk
+        run: |
+          npm install
+          npm run schemas
 
       - name: Install bitwarden/sdk
         working-directory: sdk/languages/python
