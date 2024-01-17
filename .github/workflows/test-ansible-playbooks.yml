@@ -45,6 +45,7 @@ jobs:
       - name: Generate schemas.py
         working-directory: sdk
         run: |
+          npm install
           npm run schemas
 
       - name: Install bitwarden/sdk
