@@ -37,15 +37,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install ansible ansible-lint
 
-      # TODO: Replace these steps with a simple `pip install bitwarden_sdk`
-      #   once the package is published to PyPI
-      - name: Clone bitwarden/sdk
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          repository: bitwarden/sdk
-          ref: main
-          path: sdk
-
       - name: Download Python SDK
         uses: bitwarden/gh-actions/download-artifacts@main
         with:
