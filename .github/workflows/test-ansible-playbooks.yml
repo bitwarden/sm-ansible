@@ -46,20 +46,19 @@ jobs:
           ref: main
           path: sdk
 
-      - name: Retrieve schemas from bitwarden/sdk
+      - name: Download Python SDK
         uses: bitwarden/gh-actions/download-artifacts@main
         with:
-          workflow: generate_schemas.yml
+          workflow: build-python-wheels.yml
           workflow_conclusion: success
-          path: sdk/languages/python/bitwarden_sdk/schemas.py
+          path: dist
           branch: ${{ github.event.inputs.sdk_branch || 'main' }}
 
       - name: Install bitwarden/sdk
-        working-directory: sdk/languages/python
+        working-directory: sdk
         run: |
           source ${{ github.workspace }}/.venv/bin/activate
-          pip install maturin[patchelf]
-          maturin develop
+          pip install --no-index --find-links=dist bitwarden_sdk
 
       - name: Lint
         run: |
