@@ -4,8 +4,12 @@ name: Test Ansible Playbooks
 on:
   workflow_dispatch:
     inputs:
-      branch:
+      ansible_branch:
         description: "Branch to test"
+        required: true
+        default: "main"
+      sdk_branch:
+        description: "Branch to use for bitwarden/sdk"
         required: true
         default: "main"
   pull_request:
@@ -19,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
-          ref: ${{ github.event.inputs.branch || github.head_ref }}
+          ref: ${{ github.event.inputs.ansible_branch || github.head_ref }}
 
       - name: Setup Python
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
@@ -42,11 +46,13 @@ jobs:
           ref: main
           path: sdk
 
-      - name: Generate schemas.py
-        working-directory: sdk
-        run: |
-          npm install
-          npm run schemas
+      - name: Retrieve schemas from bitwarden/sdk
+        uses: bitwarden/gh-actions/download-artifacts@main
+        with:
+          workflow: generate_schemas.yml
+          workflow_conclusion: success
+          path: sdk/languages/python/bitwarden_sdk/schemas.py
+          branch: ${{ github.event.inputs.sdk_branch || 'main' }}
 
       - name: Install bitwarden/sdk
         working-directory: sdk/languages/python
