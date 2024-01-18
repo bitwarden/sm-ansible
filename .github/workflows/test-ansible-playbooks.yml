@@ -44,6 +44,7 @@ jobs:
           workflow_conclusion: success
           path: dist
           branch: ${{ github.event.inputs.sdk_branch || 'main' }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install bitwarden/sdk
         working-directory: sdk
