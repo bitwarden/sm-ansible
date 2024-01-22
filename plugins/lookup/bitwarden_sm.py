@@ -257,7 +257,7 @@ class LookupModule(LookupBase):
         api_url = kwargs.get("api_url")
         identity_url = kwargs.get("identity_url")
         api_url, identity_url = self.get_urls(base_url, api_url, identity_url)
-        self.validate_urls(base_url, api_url, identity_url)
+        self.validate_urls(api_url, identity_url)
 
         access_token = AccessToken(
             kwargs.get("access_token") or os.getenv("BWS_ACCESS_TOKEN")
@@ -299,10 +299,8 @@ class LookupModule(LookupBase):
         return api_url, identity_url
 
     @staticmethod
-    def validate_urls(base_url, api_url, identity_url) -> None:
+    def validate_urls(api_url, identity_url) -> None:
         display.v("Parsing Bitwarden environment URL")
-        if base_url:
-            validate_url(base_url, "base")
         validate_url(api_url, "API")
         validate_url(identity_url, "Identity")
 
