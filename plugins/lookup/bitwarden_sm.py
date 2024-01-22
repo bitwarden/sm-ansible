@@ -7,40 +7,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-import base64
-import os
-from pathlib import Path
-from urllib.parse import urlparse
-import uuid
-
-from ansible.errors import AnsibleError, AnsibleLookupError
-from ansible.plugins.lookup import LookupBase
-
-try:
-    # noinspection PyCompatibility
-    from __main__ import display
-except ImportError:
-    from ansible.utils.display import Display
-
-    display = Display()
-
-try:
-    from bitwarden_sdk import (
-        BitwardenClient,
-        DeviceType,
-        client_settings_from_dict,
-        SecretResponse,
-    )
-except ImportError as bitwarden_sdk:
-    BW_SDK_IMPORT_ERROR = bitwarden_sdk
-else:
-    BW_SDK_IMPORT_ERROR = None
-
-if BW_SDK_IMPORT_ERROR:
-    raise AnsibleError(
-        "The bitwarden_sm lookup plugin requires the following python modules: 'bitwarden_sdk'."
-    )
-
 DOCUMENTATION = """
 name: bitwarden_sm
 author:
@@ -98,6 +64,35 @@ _list:
   type: list
   elements: str
 """
+
+import base64
+import os
+from pathlib import Path
+from urllib.parse import urlparse
+import uuid
+
+from ansible.errors import AnsibleError, AnsibleLookupError
+from ansible.plugins.lookup import LookupBase
+from ansible.utils.display import Display
+
+display = Display()
+
+try:
+    from bitwarden_sdk import (
+        BitwardenClient,
+        DeviceType,
+        client_settings_from_dict,
+        SecretResponse,
+    )
+except ImportError as bitwarden_sdk:
+    BW_SDK_IMPORT_ERROR = bitwarden_sdk
+else:
+    BW_SDK_IMPORT_ERROR = None
+
+if BW_SDK_IMPORT_ERROR:
+    raise AnsibleError(
+        "The bitwarden_sm lookup plugin requires the following python modules: 'bitwarden_sdk'."
+    )
 
 # default URLs
 BITWARDEN_API_URL: str = "https://api.bitwarden.com"
