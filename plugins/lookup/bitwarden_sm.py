@@ -43,7 +43,8 @@ if BW_SDK_IMPORT_ERROR:
 
 DOCUMENTATION = """
 name: bitwarden_sm
-author: Bitwarden <hello@bitwarden.com>
+author:
+  - Bitwarden (@bitwarden) <hello@bitwarden.com>
 version_added: "0.0.1"
 short_description: Lookup secrets from Bitwarden Secrets Manager
 description:
