@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # (c) 2024, Bitwarden <hello@bitwarden.com>
-# Licensed under the GPL-3.0-or-later
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
 
