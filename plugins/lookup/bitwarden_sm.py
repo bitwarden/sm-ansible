@@ -17,30 +17,39 @@ description:
   - This lookup returns a secret from Bitwarden Secrets Manager.
 options:
   _terms:
-    description: 'secret id to lookup'
-    required: true
+    description: Secret ID to lookup
+    required: True
   access_token:
-    description: 'access token to use (default: BWS_ACCESS_TOKEN)'
-    required: true
+    description: Access token to use
+    default: $BWS_ACCESS_TOKEN
+    env:
+      - name: BWS_ACCESS_TOKEN
+    required: True
+    type: string
   base_url:
-    description: 'base url to use (default: https://vault.bitwarden.com)'
-    required: false
+    description: Base url to use. If provided, api_url and identity_url will be ignored.
     default: https://vault.bitwarden.com
+    required: False
+    type: string
   api_url:
-    description: 'api url to use (default: https://api.bitwarden.com)'
-    required: false
+    description: API url to use. If provided, identity_url must also be provided.
     default: https://api.bitwarden.com
+    required: False
+    type: string
   identity_url:
-    description: 'identity url to use (default: https://identity.bitwarden.com)'
-    required: false
+    description: Identity url to use. If provided, api_url must also be provided.
     default: https://identity.bitwarden.com
+    required: False
+    type: string
   state_file_dir:
-    description: 'directory to store state file for authentication'
-    required: false
+    description: Directory to store state file for authentication.
+    required: False
+    type: string
   field:
-    description: 'field to return (default: value)'
-    required: false
+    description: Field to return from the secret.
     default: value
+    required: False
+    type: string
 """
 
 EXAMPLES = """
@@ -246,23 +255,28 @@ class AccessToken:
 
 class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs) -> list[str]:
-        # Get the arguments
+        # Set the options
+        self.set_options(var_options=variables, direct=kwargs)
+
+        # Get the options
+        if not terms:
+            raise AnsibleError("No secret_id provided")
         secret_id = terms[0]
         self.validate_secret_id(secret_id)
 
         field = kwargs.get("field") or "value"
         self.validate_field(field)
 
-        base_url = kwargs.get("base_url")
-        api_url = kwargs.get("api_url")
-        identity_url = kwargs.get("identity_url")
+        base_url = self.get_option("base_url")
+        api_url = self.get_option("api_url")
+        identity_url = self.get_option("identity_url")
         api_url, identity_url = self.get_urls(base_url, api_url, identity_url)
         self.validate_urls(api_url, identity_url)
 
         access_token = AccessToken(
-            kwargs.get("access_token") or os.getenv("BWS_ACCESS_TOKEN")
+            self.get_option("access_token") or os.getenv("BWS_ACCESS_TOKEN")
         )
-        state_file_dir = kwargs.get("state_file_dir")
+        state_file_dir = self.get_option("state_file_dir")
 
         display.vv(f"secret_id: {secret_id}")
         display.vv(f"field: {field}")
