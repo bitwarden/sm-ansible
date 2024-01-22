@@ -88,7 +88,7 @@ EXAMPLES = """
     msg: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', access_token='<your-access-token>') }}"
 - name: Use a state file for authentication
   ansible.builtin.debug:
-  msg: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', state_file_dir='~/.config/bitwarden-sm') }}"
+    msg: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', state_file_dir='~/.config/bitwarden-sm') }}"
 """
 
 RETURN = """
@@ -209,8 +209,12 @@ class AccessToken:
         try:
             self._encryption_key = base64.b64decode(encryption_key)
         except ValueError:
-            display.error("Invalid access token envryption key. Should be base64-encoded")
-            raise AccessTokenInvalidError("Invalid access token envryption key. Should be base64-encoded")
+            display.error(
+                "Invalid access token envryption key. Should be base64-encoded"
+            )
+            raise AccessTokenInvalidError(
+                "Invalid access token envryption key. Should be base64-encoded"
+            )
 
         if len(self._encryption_key) != 16:
             display.error("Invalid base64 length for encryption key")
@@ -281,9 +285,7 @@ class LookupModule(LookupBase):
         )
 
     @staticmethod
-    def get_urls(
-        base_url: str, api_url: str, identity_url: str
-    ) -> tuple[str, str]:
+    def get_urls(base_url: str, api_url: str, identity_url: str) -> tuple[str, str]:
         if base_url:
             base_url = base_url.rstrip("/")
             api_url = f"{base_url}/api"
