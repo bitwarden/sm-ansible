@@ -53,28 +53,28 @@ options:
   _terms:
     description: 'secret id to lookup'
     required: true
-    access_token:
-      description: 'access token to use (default: BWS_ACCESS_TOKEN)'
-      required: true
-    base_url:
-      description: 'base url to use (default: https://vault.bitwarden.com)'
-      required: false
-      default: https://vault.bitwarden.com
-    api_url:
-      description: 'api url to use (default: https://vault.bitwarden.com/api)'
-      required: false
-      default: https://vault.bitwarden.com/api
-    identity_url:
-      description: 'identity url to use (default: https://vault.bitwarden.com/identity)'
-      required: false
-      default: https://vault.bitwarden.com/identity
-    state_file_dir:
-      description: 'directory to store state file for authentication'
-      required: false
-    field:
-      description: 'field to return (default: value)'
-      required: false
-      default: value
+  access_token:
+    description: 'access token to use (default: BWS_ACCESS_TOKEN)'
+    required: true
+  base_url:
+    description: 'base url to use (default: https://vault.bitwarden.com)'
+    required: false
+    default: https://vault.bitwarden.com
+  api_url:
+    description: 'api url to use (default: https://api.bitwarden.com)'
+    required: false
+    default: https://api.bitwarden.com
+  identity_url:
+    description: 'identity url to use (default: https://identity.bitwarden.com)'
+    required: false
+    default: https://identity.bitwarden.com
+  state_file_dir:
+    description: 'directory to store state file for authentication'
+    required: false
+  field:
+    description: 'field to return (default: value)'
+    required: false
+    default: value
 """
 
 EXAMPLES = """
