@@ -174,6 +174,7 @@ class AccessTokenInvalidError(Exception):
 
 
 class AccessToken:
+    # pylint: disable=used-before-assignment
     def __init__(self, access_token: str):
         self._access_token = access_token
         self._access_token_version = None
@@ -181,6 +182,8 @@ class AccessToken:
         self._client_secret = None
         self._encryption_key = None
         self._parse_access_token()
+
+    # pylint: enable=used-before-assignment
 
     def _parse_access_token(self):
         if not self._access_token:
