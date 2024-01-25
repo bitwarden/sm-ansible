@@ -1,0 +1,53 @@
+---
+    name: Run tests
+    
+    on:
+      workflow_dispatch:
+      push:
+        branches:
+          - "main"
+          - "rc"
+          - "hotfix-rc-*"
+      pull_request:
+    
+    defaults:
+      run:
+        shell: bash
+    
+    jobs:
+      unit_tests:
+        name: Run unit tests
+        runs-on: ubuntu-22.04
+        steps:
+          - name: Checkout repo
+            uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    
+          - name: Setup Python
+            uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+            with:
+              python-version: 3.9
+    
+          - name: Install dependencies
+            run: |
+              python -m pip install --upgrade pip
+              pip install unittest-xml-reporting
+    
+          - name: Run unittest suite
+            run: |
+              python -m xmlrunner discover -v -s ./tests/unit -p "*tests.py" --output=./test-reports
+    
+          - name: Upload test results
+            uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
+            if: always()
+            with:
+              name: test-reports
+              path: ./test-reports
+    
+          - name: Report test results
+            uses: dorny/test-reporter@afe6793191b75b608954023a46831a3fe10048d4 # v1.7.0
+            if: always()
+            with:
+              name: test-reports
+              path: ./test-reports
+              reporter: junit-xml
+              fail-on-error: true # fail the workflow if tests failed
