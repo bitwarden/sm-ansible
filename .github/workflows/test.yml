@@ -49,5 +49,5 @@
             with:
               name: test-reports
               path: ./test-reports
-              reporter: junit-xml
+              reporter: java-junit
               fail-on-error: true # fail the workflow if tests failed
