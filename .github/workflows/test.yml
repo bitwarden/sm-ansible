@@ -70,8 +70,7 @@ jobs:
           pip install --no-index --find-links=dist bitwarden_sdk
 
       - name: Run unittest suite
-        run: |
-          python -m xmlrunner discover -v -s ./tests/unit -p "*tests.py" --output=./test-reports
+        run: python -m xmlrunner discover -v -s ./tests/unit -p "*tests.py" --output=./test-reports
 
       - name: Upload test results
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
