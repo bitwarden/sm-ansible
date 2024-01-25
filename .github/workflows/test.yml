@@ -64,7 +64,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          ls -hal ./dist
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install unittest-xml-reporting
@@ -73,7 +72,6 @@ jobs:
       - name: Run unittest suite
         run: |
           python -m xmlrunner discover -v -s ./tests/unit -p "*tests.py" --output=./test-reports
-          ls -R ./test-reports
 
       - name: Upload test results
         uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
