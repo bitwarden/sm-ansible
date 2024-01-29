@@ -25,15 +25,13 @@ class TestValidators(unittest.TestCase):
     # validate_url tests
     def test_validate_url(self):
         """validate_url() should succeed for valid urls"""
-        try:
-            validate_url(self.base_url, "base_url")
-        except AnsibleError:
-            self.fail("validate_url() raised AnsibleError unexpectedly!")
+        validate_url(self.base_url, "base_url")
 
     def test_validate_url_invalid_url_throws(self):
         """validate_url() should throw for invalid urls"""
-        with self.assertRaises(AnsibleError):
-            validate_url("this is an invalid url", "invalid_url")
+        self.assertRaises(
+            AnsibleError, validate_url, "this is an invalid url", "invalid_url"
+        )
 
     # validate_field tests
     def test_validate_field(self):
@@ -49,32 +47,24 @@ class TestValidators(unittest.TestCase):
             "revisionDate",
         ]
         for field in valid_fields:
-            try:
-                LookupModule.validate_field(field)
-            except AnsibleError:
-                self.fail(
-                    f"validate_field() raised AnsibleError unexpectedly for field: {field}"
-                )
+            LookupModule.validate_field(field)
 
     def test_validate_field_invalid_field_throws(self):
         """validate_field() should throw for invalid fields"""
-        with self.assertRaises(AnsibleError):
-            LookupModule.validate_field("invalid_field")
+        self.assertRaises(AnsibleError, LookupModule.validate_field, "invalid_field")
 
     # validate_secret_id tests
     def test_validate_secret_id(self):
         """validate_secret_id() should succeed for valid secret ids"""
         valid_secret_id = "cdc0a886-6ad6-4136-bfd4-b04f01149173"
-        try:
-            LookupModule.validate_secret_id(valid_secret_id)
-        except AnsibleError:
-            self.fail("validate_secret_id() raised AnsibleError unexpectedly!")
+        self.assertEqual(LookupModule.validate_secret_id(valid_secret_id), None)
 
     def test_validate_secret_id_invalid_secret_id_throws(self):
         """validate_secret_id() should throw for invalid secret ids"""
         invalid_secret_id = "invalid_secret_id"
-        with self.assertRaises(AnsibleError):
-            LookupModule.validate_secret_id(invalid_secret_id)
+        self.assertRaises(
+            AnsibleError, LookupModule.validate_secret_id, invalid_secret_id
+        )
 
     # get_urls tests
     def test_get_urls_base_url(self):
@@ -107,13 +97,13 @@ class TestValidators(unittest.TestCase):
 
     def test_get_urls_api_url_provided_but_identity_url_not_throws(self):
         """if api_url is provided but identity_url is not, raise AnsibleError"""
-        with self.assertRaises(AnsibleError):
-            LookupModule.get_urls(None, self.api_url, None)
+        self.assertRaises(AnsibleError, LookupModule.get_urls, None, self.api_url, None)
 
     def test_get_urls_identity_url_provided_but_api_url_not_throws(self):
         """if identity_url is provided but api_url is not, raise AnsibleError"""
-        with self.assertRaises(AnsibleError):
-            LookupModule.get_urls(None, None, self.identity_url)
+        self.assertRaises(
+            AnsibleError, LookupModule.get_urls, None, None, self.identity_url
+        )
 
 
 if __name__ == "__main__":

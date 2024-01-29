@@ -30,34 +30,29 @@ class TestAccessToken(unittest.TestCase):
     def test_access_token_invalid_throws(self):
         """invalid access token should throw an error"""
         access_token = "invalid_format"
-        with self.assertRaises(AccessTokenInvalidError):
-            AccessToken(access_token)
+        self.assertRaises(AccessTokenInvalidError, AccessToken, access_token)
 
     def test_invalid_version_throws(self):
         """invalid access token versions should throw an error"""
         access_token = "1.babcb43f-fdf8-43d7-b0c4-b10000cb5949.48ojSvE7CbPVIoJWhYM8wNb654GwFn:iVl56MELslfpzHm2ayIbOw=="
-        with self.assertRaises(AccessTokenInvalidError):
-            AccessToken(access_token)
+        self.assertRaises(AccessTokenInvalidError, AccessToken, access_token)
 
     def test_invalid_id_throws(self):
         """invalid access token ids should throw an error"""
         access_token = (
             "0.invalid_id:48ojSvE7CbPVIoJWhYM8wNb654GwFn:iVl56MELslfpzHm2ayIbOw"
         )
-        with self.assertRaises(AccessTokenInvalidError):
-            AccessToken(access_token)
+        self.assertRaises(AccessTokenInvalidError, AccessToken, access_token)
 
     def test_client_secret_invalid_throws(self):
         """invalid client secrets should throw an error"""
         access_token = "0.babcb43f-fdf8-43d7-b0c4-b10000cb5949.invalid_client_secret:iVl56MELslfpzHm2ayIbOw"
-        with self.assertRaises(AccessTokenInvalidError):
-            AccessToken(access_token)
+        self.assertRaises(AccessTokenInvalidError, AccessToken, access_token)
 
     def test_encryption_key_invalid_throws(self):
         """invalid encryption keys should throw an error"""
         access_token = "0.babcb43f-fdf8-43d7-b0c4-b10000cb5949.48ojSvE7CbPVIoJWhYM8wNb654GwFn:invalid_encryption_key"
-        with self.assertRaises(AccessTokenInvalidError):
-            AccessToken(access_token)
+        self.assertRaises(AccessTokenInvalidError, AccessToken, access_token)
 
 
 if __name__ == "__main__":
