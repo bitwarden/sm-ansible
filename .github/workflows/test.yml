@@ -6,7 +6,6 @@ on:
     inputs:
       ansible_branch:
         description: "Branch to test"
-        required: true
         default: "main"
       sdk_branch:
         description: "The branch to download the Python SDK from"
