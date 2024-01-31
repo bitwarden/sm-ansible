@@ -24,6 +24,7 @@
   "scripts": {
     "prepare": "husky install",
     "lint": "prettier --check .",
-    "prettier": "prettier --write ."
+    "prettier": "prettier --write .",
+    "test": "python -m unittest discover -v -s ./tests/unit -p \"*tests.py\" || echo 'Python is not installed. Please source a virtual environment first.' && exit 1"
   }
 }
