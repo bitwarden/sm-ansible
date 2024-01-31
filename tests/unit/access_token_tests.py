@@ -3,7 +3,7 @@ import unittest
 import sys
 
 sys.path.append("../..")
-from plugins.lookup.bitwarden_sm import AccessToken, AccessTokenInvalidError
+from plugins.lookup.lookup import AccessToken, AccessTokenInvalidError
 
 
 class TestAccessToken(unittest.TestCase):
