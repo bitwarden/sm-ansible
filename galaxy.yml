@@ -38,4 +38,5 @@ build_ignore:
   - ansible.cfg
   - package.json
   - package-lock.json
+  - requirements.txt
   - tests
