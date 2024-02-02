@@ -1,11 +1,12 @@
 namespace: bitwarden
-name: bitwarden_sm
-version: 0.0.1
+name: secrets
+version: 1.0.0
 readme: README.md
 authors:
   - Bitwarden <hello@bitwarden.com>
 description: This is a Collection of the Bitwarden Secrets Manager lookup plugin.
-license: GPL-3.0-or-later
+license:
+  - GPL-3.0-or-later
 tags:
   - access
   - account

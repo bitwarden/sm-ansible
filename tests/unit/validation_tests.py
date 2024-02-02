@@ -2,7 +2,7 @@ import unittest
 import sys
 
 sys.path.append("../..")
-from plugins.lookup.bitwarden_sm import (
+from plugins.lookup.lookup import (
     AnsibleError,
     LookupModule,
     validate_url,

@@ -8,10 +8,10 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 DOCUMENTATION = """
-name: bitwarden_sm
+name: lookup
 author:
   - Bitwarden (@bitwarden) <hello@bitwarden.com>
-version_added: "0.0.1"
+version_added: "1.0.0"
 short_description: Lookup secrets from Bitwarden Secrets Manager
 description:
   - This lookup returns a secret from Bitwarden Secrets Manager.
@@ -55,16 +55,16 @@ options:
 EXAMPLES = """
 - name: Lookup a secret
   ansible.builtin.debug:
-    msg: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173') }}"
+    msg: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173') }}"
 - name: Get the note value for a secret
   ansible.builtin.debug:
-    msg: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', field='note') }}"
+    msg: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', field='note') }}"
 - name: Lookup a secret using a custom access token
   ansible.builtin.debug:
-    msg: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', access_token='<your-access-token>') }}"
+    msg: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', access_token='<your-access-token>') }}"
 - name: Use a state file for authentication
   ansible.builtin.debug:
-    msg: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', state_file_dir='~/.config/bitwarden-sm') }}"
+    msg: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', state_file_dir='~/.config/bitwarden-sm') }}"
 """
 
 RETURN = """
@@ -100,7 +100,7 @@ else:
 
 if BW_SDK_IMPORT_ERROR:
     raise AnsibleError(
-        "The bitwarden_sm lookup plugin requires the following python modules: 'bitwarden_sdk'."
+        "The bitwarden.secrets.lookup plugin requires the following python modules: 'bitwarden_sdk'."
     )
 
 # default URLs

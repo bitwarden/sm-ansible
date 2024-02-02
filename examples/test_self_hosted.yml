@@ -5,9 +5,9 @@
   gather_facts: false
 
   vars:
-    secret_from_other_server: "{{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', base_url='https://bitwarden.example.com' ) }}"
+    secret_from_other_server: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', base_url='https://bitwarden.example.com' ) }}"
     secret_advanced: >-
-      {{ lookup('bitwarden_sm', 'cdc0a886-6ad6-4136-bfd4-b04f01149173',
+      {{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173',
         api_url='https://bitwarden.example.com/api',
         identity_url='https://bitwarden.example.com/identity' ) }}
 
