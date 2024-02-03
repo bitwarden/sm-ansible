@@ -3,7 +3,7 @@
 ## Install dependencies
 
 ```bash
-pip install bitwarden_sdk
+pip install bitwarden-sdk
 ```
 
 ## Run
