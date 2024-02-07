@@ -100,7 +100,7 @@ else:
 
 if BW_SDK_IMPORT_ERROR:
     raise AnsibleError(
-        "The bitwarden.secrets.lookup plugin requires the following python modules: 'bitwarden_sdk'."
+        "The bitwarden.secrets.lookup plugin requires the following python modules: 'bitwarden-sdk'."
     )
 
 # default URLs
