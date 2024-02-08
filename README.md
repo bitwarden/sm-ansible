@@ -9,9 +9,12 @@ pip install bitwarden-sdk
 ## Run
 
 ```bash
-export HISTCONTROL=ignorespace # to avoid storing access token in bash history
- export BWS_ACCESS_TOKEN=<your_access_token> # the space keeps this out of bash history
-ansible-playbook examples/test.yml
+# the line below will prevent lines with leading spaces from being saved to bash history
+export HISTCONTROL=ignorespace
+
+# the space in the line below keeps your access token out of bash history
+ export BWS_ACCESS_TOKEN=<your_access_token>
+ansible-playbook <path_to_your_playbook>
 ```
 
 ### macOS
