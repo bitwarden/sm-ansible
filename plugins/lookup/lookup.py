@@ -264,7 +264,7 @@ class LookupModule(LookupBase):
         secret_id = terms[0]
         self.validate_secret_id(secret_id)
 
-        field = kwargs.get("field") or "value"
+        field = self.get_option("field") or "value"
         self.validate_field(field)
 
         base_url = self.get_option("base_url")
