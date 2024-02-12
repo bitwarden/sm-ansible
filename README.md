@@ -14,7 +14,7 @@ export HISTCONTROL=ignorespace
 
 # the space in the line below keeps your access token out of bash history
  export BWS_ACCESS_TOKEN=<your_access_token>
- 
+
 ansible-playbook <path_to_your_playbook>
 ```
 
