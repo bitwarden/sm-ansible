@@ -52,9 +52,9 @@ plugin:
 
 <!-- prettier-ignore -->
 > [!Note]\
-> We are using a `vars_prompt` to avoid storing the access token in the playbook. While
-> there are many ways to pass the access token to the lookup plugin, we recommend against storing it
-> in the playbook itself.
+> We are using a `vars_prompt` to avoid storing the access token in the playbook.\
+> While there are many ways to pass the access token to the lookup plugin,\
+> we recommend against storing it in the playbook itself.
 
 For more information on how to use the Bitwarden Secrets Manager Collection, see the
 [documentation](https://bitwarden.com/help/ansible-integration).
