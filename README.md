@@ -50,7 +50,9 @@ plugin:
     some_secret: "{{ lookup('bitwarden.secrets.lookup', '<your_secret_id>', access_token=your_access_token) }}"
 ```
 
-> [!NOTE] We are using a `vars_prompt` to avoid storing the access token in the playbook. While
+<!-- prettier-ignore -->
+> [!NOTE]
+We are using a `vars_prompt` to avoid storing the access token in the playbook. While
 > there are many ways to pass the access token to the lookup plugin, we recommend against storing it
 > in the playbook itself.
 
