@@ -1,31 +1,99 @@
 name: Publish to Ansible Galaxy
+run-name: Publish to Ansible Galaxy ${{ inputs.release_type }}
 
 on:
-  #   push:
-  #     branches:
-  #       - main
-  #     tags:
-  #       - '*'
-  #   pull_request:
   workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Release Options"
+        required: true
+        default: "Release"
+        type: choice
+        options:
+          - Release
+          - Dry Run
 
 permissions:
   contents: read
 
 jobs:
+  validate:
+    name: Setup
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Branch check
+        if: ${{ github.event.inputs.release_type != 'Dry Run' }}
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/rc" ]] && [[ "$GITHUB_REF" != "refs/heads/hotfix-rc" ]]; then
+            echo "==================================="
+            echo "[!] Can only release from the 'rc' or 'hotfix-rc' branches"
+            echo "==================================="
+            exit 1
+          fi
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(grep version galaxy.yml | awk -F'"' '{ print $2 }')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
   publish:
     runs-on: ubuntu-latest
+    needs: validate
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
-      - name: Retrieve secrets from Secrets Manager
-        uses: bitwarden/sm-action@92d1d6a4f26a89a8191c83ab531a53544578f182 # v2.0.0
+      - name: Login to Azure - CI Subscription
+        uses: Azure/login@e15b166166a8746d1a47596803bd8c1b595455cf # v1.6.0
         with:
-          access_token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            dc3dc07b-1bbe-4ca6-bb16-b0d500fd1b71 > GALAXY_API_KEY
+          creds: ${{ secrets.AZURE_KV_CI_SERVICE_PRINCIPAL }}
+
+      - name: Retrieve github PAT secrets
+        id: retrieve-secret-pat
+        uses: bitwarden/gh-actions/get-keyvault-secrets@main
+        with:
+          keyvault: "bitwarden-ci"
+          secrets: "github-pat-bitwarden-devops-bot-repo-scope"
+
+      - name: Download Python SDK
+        uses: bitwarden/gh-actions/download-artifacts@main
+        with:
+          workflow: build-python-wheels.yml
+          workflow_conclusion: success
+          path: dist
+          repo: bitwarden/sdk
+          branch: ${{ github.event.inputs.release_type == 'Dry Run' && 'main' ||  github.ref_name }}
+          github_token: ${{ steps.retrieve-secret-pat.outputs.github-pat-bitwarden-devops-bot-repo-scope }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade ansible
+          pip install -r requirements.txt
+          pip install --no-index --find-links=dist bitwarden_sdk
+
+      - name: Build Ansible Collection
+        run: |
+          ls -lR dist
+          ansible-galaxy collection build dist --force
+
+      - name: Create release
+        if: ${{ github.event.inputs.release_type != 'Dry Run' }}
+        uses: ncipollo/release-action@6c75be85e571768fa31b40abf38de58ba0397db5 # v1.13.0
+        with:
+          tag: v${{ needs.validate.outputs.version }}
+          name: v${{ needs.validate.outputs.version }}
+          body: "<insert release notes here>"
+          draft: true
+          artifact: dist/bitwarden-secrets-${{ needs.validate.outputs.version }}.tar.gz
 
       - name: Publish to Ansible Galaxy
+        if: ${{ github.event.inputs.release_type != 'Dry Run' }}
         uses: ansible/ansible-publish-action@a56a0328c92c1d4feedf5bd7f7cf7ec7a4ae3f09 # v1.0.0
         with:
           api_key: ${{ env.GALAXY_API_KEY }}
