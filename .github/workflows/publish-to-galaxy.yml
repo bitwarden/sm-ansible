@@ -80,7 +80,7 @@ jobs:
       - name: Build Ansible Collection
         run: |
           ls -lR dist
-          ansible-galaxy collection build dist --force
+          ansible-galaxy collection build . --force
 
       - name: Create release
         if: ${{ github.event.inputs.release_type != 'Dry Run' }}
