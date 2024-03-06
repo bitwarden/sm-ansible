@@ -58,7 +58,9 @@ jobs:
         uses: bitwarden/gh-actions/get-keyvault-secrets@main
         with:
           keyvault: "bitwarden-ci"
-          secrets: "github-pat-bitwarden-devops-bot-repo-scope"
+          secrets: "github-pat-bitwarden-devops-bot-repo-scope,
+            ansible-galaxy-api-key,
+            ansible-galaxy-dev-api-key"
 
       - name: Download Python SDK
         uses: bitwarden/gh-actions/download-artifacts@main
@@ -79,8 +81,8 @@ jobs:
 
       - name: Build Ansible Collection
         run: |
-          ls -lR dist
           ansible-galaxy collection build . --force
+          ls bitwarden-secrets-*.tar.gz
 
       - name: Create release
         if: ${{ github.event.inputs.release_type != 'Dry Run' }}
@@ -90,11 +92,12 @@ jobs:
           name: v${{ needs.validate.outputs.version }}
           body: "<insert release notes here>"
           draft: true
-          artifact: dist/bitwarden-secrets-${{ needs.validate.outputs.version }}.tar.gz
+          artifact: bitwarden-secrets-${{ needs.validate.outputs.version }}.tar.gz
+
+      - name: Publish to Ansible Galaxy Dev Dry Run
+        if: ${{ github.event.inputs.release_type == 'Dry Run' }}
+        run: ansible-galaxy collection publish bitwarden-secrets-${{ steps.cversion.outputs.version }}.tar.gz --server https://galaxy-dev.ansible.com/ --api-key ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-dev-api-key }}
 
       - name: Publish to Ansible Galaxy
         if: ${{ github.event.inputs.release_type != 'Dry Run' }}
-        uses: ansible/ansible-publish-action@a56a0328c92c1d4feedf5bd7f7cf7ec7a4ae3f09 # v1.0.0
-        with:
-          api_key: ${{ env.GALAXY_API_KEY }}
-          src_path: .
+        run: ansible-galaxy collection bitwarden-secrets-${{ steps.cversion.outputs.version }}.tar.gz --api-key ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-api-key }}
