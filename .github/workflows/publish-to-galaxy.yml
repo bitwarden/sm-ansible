@@ -96,8 +96,8 @@ jobs:
 
       - name: Publish to Ansible Galaxy Dev Dry Run
         if: ${{ github.event.inputs.release_type == 'Dry Run' }}
-        run: ansible-galaxy collection publish bitwarden-secrets-${{ steps.cversion.outputs.version }}.tar.gz --server https://galaxy-dev.ansible.com/ --api-key ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-dev-api-key }}
+        run: ansible-galaxy collection publish bitwarden-secrets-${{ needs.validate.outputs.version }}.tar.gz --server https://galaxy-dev.ansible.com/ --api-key ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-dev-api-key }}
 
       - name: Publish to Ansible Galaxy
         if: ${{ github.event.inputs.release_type != 'Dry Run' }}
-        run: ansible-galaxy collection bitwarden-secrets-${{ steps.cversion.outputs.version }}.tar.gz --api-key ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-api-key }}
+        run: ansible-galaxy collection bitwarden-secrets-${{ needs.validate.outputs.version }}.tar.gz --api-key ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-api-key }}
