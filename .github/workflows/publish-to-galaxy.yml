@@ -59,19 +59,7 @@ jobs:
         uses: bitwarden/gh-actions/get-keyvault-secrets@main
         with:
           keyvault: "bitwarden-ci"
-          secrets: "github-pat-bitwarden-devops-bot-repo-scope,
-            ansible-galaxy-api-key,
-            ansible-galaxy-dev-api-key"
-
-      # - name: Download Python SDK
-      #   uses: bitwarden/gh-actions/download-artifacts@main
-      #   with:
-      #     workflow: build-python-wheels.yml
-      #     workflow_conclusion: success
-      #     path: dist
-      #     repo: bitwarden/sdk
-      #     branch: ${{ github.event.inputs.release_type == 'Dry Run' && 'main' ||  github.ref_name }}
-      #     github_token: ${{ steps.retrieve-secret-pat.outputs.github-pat-bitwarden-devops-bot-repo-scope }}
+          secrets: "ansible-galaxy-api-key"
 
       - name: Install dependencies
         run: |
@@ -92,12 +80,6 @@ jobs:
           body: "<insert release notes here>"
           draft: true
           artifact: bitwarden-secrets-${{ needs.validate.outputs.version }}.tar.gz
-
-      - name: Publish to Ansible Galaxy Dev Dry Run
-        if: ${{ github.event.inputs.release_type == 'Dry Run' }}
-        env:
-          _VERSION: ${{ needs.validate.outputs.version }}
-        run: ansible-galaxy collection publish bitwarden-secrets-$_VERSION.tar.gz --server https://galaxy-dev.ansible.com/ --api-key ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-dev-api-key }}
 
       - name: Publish to Ansible Galaxy
         if: ${{ github.event.inputs.release_type != 'Dry Run' }}
