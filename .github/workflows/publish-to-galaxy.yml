@@ -44,7 +44,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: validate
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
