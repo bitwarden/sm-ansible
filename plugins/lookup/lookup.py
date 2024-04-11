@@ -123,7 +123,7 @@ INVALID_URL_ERROR: str = (
 )
 SECRET_LOOKUP_ERROR: str = (
     "The requested secret could not be found: '{}' "
-    "Please ensure that the service account has access to the secret UUID provided. "
+    "Please ensure that the machine account has access to the secret UUID provided. "
     "Original error: {}"
 )
 STATE_FILE_DIR_ERROR: str = (
