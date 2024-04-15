@@ -44,7 +44,7 @@ jobs:
           ref: ${{ github.event.inputs.ansible_branch || github.head_ref }}
 
       - name: Setup Python
-        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
           python-version: "3.9"
 
@@ -79,7 +79,7 @@ jobs:
           path: ./test-reports
 
       - name: Report test results
-        uses: dorny/test-reporter@eaa763f6ffc21c7a37837f56cd5f9737f27fc6c8 # v1.8.0
+        uses: dorny/test-reporter@c40d89d5e987cd80f3a32b3c233556e22bdca958 # v1.9.0
         if: always()
         with:
           name: test-reports
