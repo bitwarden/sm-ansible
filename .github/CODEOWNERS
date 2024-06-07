@@ -7,5 +7,8 @@
 # Default file owners
 * @bitwarden/team-secrets-manager-dev
 
-# DevOps for Actions and other workflow changes
-.github/workflows @bitwarden/dept-devops
+# BRE for release workflow changes
+.github/workflows/publish-to-galaxy.yml @bitwarden/dept-bre
+
+# BRE for release workflow changes
+.github/workflows/publish-to-galaxy.yml @bitwarden/dept-bre
