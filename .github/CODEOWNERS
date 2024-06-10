@@ -9,6 +9,3 @@
 
 # BRE for release workflow changes
 .github/workflows/publish-to-galaxy.yml @bitwarden/dept-bre
-
-# BRE for release workflow changes
-.github/workflows/publish-to-galaxy.yml @bitwarden/dept-bre
