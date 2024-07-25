@@ -104,6 +104,7 @@ if BW_SDK_IMPORT_ERROR:
     )
 
 # default URLs
+BITWARDEN_BASE_URL: str = "https://vault.bitwarden.com"
 BITWARDEN_API_URL: str = "https://api.bitwarden.com"
 BITWARDEN_IDENTITY_URL: str = "https://identity.bitwarden.com"
 
@@ -306,21 +307,26 @@ class LookupModule(LookupBase):
 
     @staticmethod
     def get_urls(base_url: str, api_url: str, identity_url: str) -> tuple[str, str]:
-        if base_url:
-            base_url = base_url.rstrip("/")
+        if api_url == BITWARDEN_API_URL and identity_url != BITWARDEN_IDENTITY_URL:
+            # unset the default API URL so that the error message is correct.
+            # otherwise, the user will see the default API URL in the error message,
+            # which is confusing
+            api_url = None
+            display.error(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
+            raise AnsibleError(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
+        elif api_url != BITWARDEN_API_URL and identity_url == BITWARDEN_IDENTITY_URL:
+            # unset the default Identity URL so that the error message is correct.
+            # otherwise, the user will see the default Identity URL in the error message,
+            # which is confusing
+            identity_url = None
+            display.error(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
+            raise AnsibleError(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
+        elif base_url != BITWARDEN_BASE_URL:
             api_url = f"{base_url}/api"
             identity_url = f"{base_url}/identity"
-        elif api_url and identity_url:
             return api_url, identity_url
-        elif not base_url and not api_url and not identity_url:
-            api_url = BITWARDEN_API_URL
-            identity_url = BITWARDEN_IDENTITY_URL
         else:
-            display.error(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
-            raise AnsibleError(
-                API_IDENTITY_URL_ERROR.format(api_url, identity_url)
-            ) from None
-        return api_url, identity_url
+            return api_url, identity_url
 
     @staticmethod
     def validate_urls(api_url, identity_url) -> None:
