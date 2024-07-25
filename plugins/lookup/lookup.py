@@ -270,6 +270,7 @@ class LookupModule(LookupBase):
         base_url = self.get_option("base_url")
         api_url = self.get_option("api_url")
         identity_url = self.get_option("identity_url")
+        base_url, api_url, identity_url = self.sanitize_urls(base_url, api_url, identity_url)
         api_url, identity_url = self.get_urls(base_url, api_url, identity_url)
         self.validate_urls(api_url, identity_url)
 
@@ -293,6 +294,15 @@ class LookupModule(LookupBase):
             identity_url,
             state_file_dir,
         )
+
+    @staticmethod
+    def sanitize_urls(*args):
+        sanitized_inputs = []
+        for input_var in args:
+            input_var = str(input_var).strip()
+            input_var = input_var.rstrip("/")
+            sanitized_inputs.append(input_var)
+        return sanitized_inputs
 
     @staticmethod
     def get_urls(base_url: str, api_url: str, identity_url: str) -> tuple[str, str]:
