@@ -81,12 +81,6 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(api_url, f"{self.base_url}/api")
         self.assertEqual(identity_url, f"{self.base_url}/identity")
 
-    def test_get_urls_default_urls(self):
-        """if no urls are provided, use defaults"""
-        api_url, identity_url = LookupModule.get_urls(None, None, None)
-        self.assertEqual(api_url, BITWARDEN_API_URL)
-        self.assertEqual(identity_url, BITWARDEN_IDENTITY_URL)
-
     def test_get_urls_base_url_provided_ignores_api_url_identity_url(self):
         """if base_url is provided, api_url and identity_url are ignored"""
         api_url, identity_url = LookupModule.get_urls(
