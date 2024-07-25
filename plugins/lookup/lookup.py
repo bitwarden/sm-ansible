@@ -271,7 +271,9 @@ class LookupModule(LookupBase):
         base_url = self.get_option("base_url")
         api_url = self.get_option("api_url")
         identity_url = self.get_option("identity_url")
-        base_url, api_url, identity_url = self.sanitize_urls(base_url, api_url, identity_url)
+        base_url, api_url, identity_url = self.sanitize_urls(
+            base_url, api_url, identity_url
+        )
         api_url, identity_url = self.get_urls(base_url, api_url, identity_url)
         self.validate_urls(api_url, identity_url)
 
