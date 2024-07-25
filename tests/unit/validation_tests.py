@@ -6,6 +6,7 @@ from plugins.lookup.lookup import (
     AnsibleError,
     LookupModule,
     validate_url,
+    BITWARDEN_BASE_URL,
     BITWARDEN_API_URL,
     BITWARDEN_IDENTITY_URL,
 )
@@ -69,14 +70,16 @@ class TestValidators(unittest.TestCase):
     # get_urls tests
     def test_get_urls_base_url(self):
         """if base_url is provided, derive api_url and identity_url from it"""
-        api_url, identity_url = LookupModule.get_urls(self.base_url, None, None)
+        api_url, identity_url = LookupModule.get_urls(
+            self.base_url, BITWARDEN_API_URL, BITWARDEN_IDENTITY_URL
+        )
         self.assertEqual(api_url, f"{self.base_url}/api")
         self.assertEqual(identity_url, f"{self.base_url}/identity")
 
     def test_get_urls_api_url_identity_url(self):
         """if api_url and identity_url are provided, use them"""
         api_url, identity_url = LookupModule.get_urls(
-            None, self.api_url, self.identity_url
+            BITWARDEN_BASE_URL, self.api_url, self.identity_url
         )
         self.assertEqual(api_url, f"{self.base_url}/api")
         self.assertEqual(identity_url, f"{self.base_url}/identity")
@@ -91,12 +94,22 @@ class TestValidators(unittest.TestCase):
 
     def test_get_urls_api_url_provided_but_identity_url_not_throws(self):
         """if api_url is provided but identity_url is not, raise AnsibleError"""
-        self.assertRaises(AnsibleError, LookupModule.get_urls, None, self.api_url, None)
+        self.assertRaises(
+            AnsibleError,
+            LookupModule.get_urls,
+            BITWARDEN_BASE_URL,
+            self.api_url,
+            BITWARDEN_IDENTITY_URL,
+        )
 
     def test_get_urls_identity_url_provided_but_api_url_not_throws(self):
         """if identity_url is provided but api_url is not, raise AnsibleError"""
         self.assertRaises(
-            AnsibleError, LookupModule.get_urls, None, None, self.identity_url
+            AnsibleError,
+            LookupModule.get_urls,
+            BITWARDEN_BASE_URL,
+            BITWARDEN_API_URL,
+            self.identity_url,
         )
 
 
