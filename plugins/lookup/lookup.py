@@ -308,27 +308,26 @@ class LookupModule(LookupBase):
         return sanitized_inputs
 
     @staticmethod
-    def get_urls(base_url: str, api_url: str, identity_url: str) -> tuple[str, str]:
-        if api_url == BITWARDEN_API_URL and identity_url != BITWARDEN_IDENTITY_URL:
-            # unset the default API URL so that the error message is correct.
-            # otherwise, the user will see the default API URL in the error message,
-            # which is confusing
-            api_url = None
-            display.error(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
-            raise AnsibleError(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
-        elif api_url != BITWARDEN_API_URL and identity_url == BITWARDEN_IDENTITY_URL:
-            # unset the default Identity URL so that the error message is correct.
-            # otherwise, the user will see the default Identity URL in the error message,
-            # which is confusing
-            identity_url = None
-            display.error(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
-            raise AnsibleError(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
-        elif base_url != BITWARDEN_BASE_URL:
+    def get_urls(
+        base_url: str = None, api_url: str = None, identity_url: str = None
+    ) -> tuple[str, str]:
+        if base_url != BITWARDEN_BASE_URL:
             api_url = f"{base_url}/api"
             identity_url = f"{base_url}/identity"
-            return api_url, identity_url
+            return (api_url, identity_url)
         else:
-            return api_url, identity_url
+            if api_url == BITWARDEN_API_URL and identity_url == BITWARDEN_IDENTITY_URL:
+                return (api_url, identity_url)
+            elif (
+                api_url != BITWARDEN_API_URL and identity_url == BITWARDEN_IDENTITY_URL
+            ) or (
+                api_url == BITWARDEN_API_URL and identity_url != BITWARDEN_IDENTITY_URL
+            ):
+                raise AnsibleError(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
+            return (
+                api_url,
+                identity_url,
+            )
 
     @staticmethod
     def validate_urls(api_url, identity_url) -> None:
