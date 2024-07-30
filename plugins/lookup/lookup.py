@@ -323,6 +323,11 @@ class LookupModule(LookupBase):
             ) or (
                 api_url == BITWARDEN_API_URL and identity_url != BITWARDEN_IDENTITY_URL
             ):
+                # unset the default URLs before throwing the error
+                if api_url == BITWARDEN_API_URL:
+                    api_url = None
+                if identity_url == BITWARDEN_IDENTITY_URL:
+                    identity_url = None
                 raise AnsibleError(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
             return (
                 api_url,
