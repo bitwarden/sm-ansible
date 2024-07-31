@@ -316,9 +316,7 @@ class LookupModule(LookupBase):
             identity_url = f"{base_url}/identity"
             return (api_url, identity_url)
         else:
-            if api_url == BITWARDEN_API_URL and identity_url == BITWARDEN_IDENTITY_URL:
-                return (api_url, identity_url)
-            elif (
+            if (
                 api_url != BITWARDEN_API_URL and identity_url == BITWARDEN_IDENTITY_URL
             ) or (
                 api_url == BITWARDEN_API_URL and identity_url != BITWARDEN_IDENTITY_URL
