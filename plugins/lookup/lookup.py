@@ -104,6 +104,7 @@ if BW_SDK_IMPORT_ERROR:
     )
 
 # default URLs
+BITWARDEN_BASE_URL: str = "https://vault.bitwarden.com"
 BITWARDEN_API_URL: str = "https://api.bitwarden.com"
 BITWARDEN_IDENTITY_URL: str = "https://identity.bitwarden.com"
 
@@ -270,6 +271,9 @@ class LookupModule(LookupBase):
         base_url = self.get_option("base_url")
         api_url = self.get_option("api_url")
         identity_url = self.get_option("identity_url")
+        base_url, api_url, identity_url = self.sanitize_urls(
+            base_url, api_url, identity_url
+        )
         api_url, identity_url = self.get_urls(base_url, api_url, identity_url)
         self.validate_urls(api_url, identity_url)
 
@@ -295,22 +299,38 @@ class LookupModule(LookupBase):
         )
 
     @staticmethod
-    def get_urls(base_url: str, api_url: str, identity_url: str) -> tuple[str, str]:
-        if base_url:
-            base_url = base_url.rstrip("/")
+    def sanitize_urls(*args):
+        sanitized_inputs = []
+        for input_var in args:
+            input_var = str(input_var).strip()
+            input_var = input_var.rstrip("/")
+            sanitized_inputs.append(input_var)
+        return sanitized_inputs
+
+    @staticmethod
+    def get_urls(
+        base_url: str = None, api_url: str = None, identity_url: str = None
+    ) -> tuple[str, str]:
+        if base_url != BITWARDEN_BASE_URL:
             api_url = f"{base_url}/api"
             identity_url = f"{base_url}/identity"
-        elif api_url and identity_url:
-            return api_url, identity_url
-        elif not base_url and not api_url and not identity_url:
-            api_url = BITWARDEN_API_URL
-            identity_url = BITWARDEN_IDENTITY_URL
+            return (api_url, identity_url)
         else:
-            display.error(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
-            raise AnsibleError(
-                API_IDENTITY_URL_ERROR.format(api_url, identity_url)
-            ) from None
-        return api_url, identity_url
+            if (
+                api_url != BITWARDEN_API_URL and identity_url == BITWARDEN_IDENTITY_URL
+            ) or (
+                api_url == BITWARDEN_API_URL and identity_url != BITWARDEN_IDENTITY_URL
+            ):
+                # unset the default URLs before throwing the error
+                if api_url == BITWARDEN_API_URL:
+                    api_url = None
+                if identity_url == BITWARDEN_IDENTITY_URL:
+                    identity_url = None
+                raise AnsibleError(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
+            return (
+                api_url,
+                identity_url,
+            )
 
     @staticmethod
     def validate_urls(api_url, identity_url) -> None:

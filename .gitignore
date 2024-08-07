@@ -30,3 +30,6 @@ __pycache__
 
 # Vagrant
 .vagrant/
+
+# Ansible Galaxy artifacts
+bitwarden-secrets-*.tar.gz
