@@ -1,5 +1,4 @@
----
-name: Run tests
+name: Testing
 
 on:
   workflow_dispatch:
@@ -17,28 +16,48 @@ on:
       - "hotfix-rc-*"
   pull_request:
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
-  unit_tests:
-    name: Run unit tests
+  check-test-secrets:
+    name: Check for test secrets
     runs-on: ubuntu-22.04
+    outputs:
+      available: ${{ steps.check-test-secrets.outputs.available }}
+    permissions:
+      contents: read
+
     steps:
-      - name: Login to Azure - CI Subscription
+      - name: Check
+        id: check-test-secrets
+        run: |
+          if [ "${{ secrets.CODECOV_TOKEN }}" != '' ]; then
+            echo "available=true" >> $GITHUB_OUTPUT;
+          else
+            echo "available=false" >> $GITHUB_OUTPUT;
+          fi
+
+  testing:
+    name: Run tests
+    runs-on: ubuntu-22.04
+    needs: check-test-secrets
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Log in to Azure
         uses: Azure/login@e15b166166a8746d1a47596803bd8c1b595455cf # v1.6.0
         with:
           creds: ${{ secrets.AZURE_KV_CI_SERVICE_PRINCIPAL }}
 
-      - name: Retrieve github PAT secrets
+      - name: Retrieve GitHub PAT secrets
         id: retrieve-secret-pat
         uses: bitwarden/gh-actions/get-keyvault-secrets@main
         with:
           keyvault: "bitwarden-ci"
           secrets: "github-pat-bitwarden-devops-bot-repo-scope"
 
-      - name: Checkout repo
+      - name: Check out repo
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{ github.event.inputs.ansible_branch || github.head_ref }}
@@ -48,7 +67,7 @@ jobs:
         with:
           python-version: "3.9"
 
-      - name: Make Artifact Dir
+      - name: Create artifact directory
         run: mkdir ./dist
 
       - name: Download Python SDK
@@ -68,21 +87,14 @@ jobs:
           pip install unittest-xml-reporting
           pip install --no-index --find-links=dist bitwarden_sdk
 
-      - name: Run unittest suite
+      - name: Run unit test suite
         run: python -m xmlrunner discover -v -s ./tests/unit -p "*tests.py" --output=./test-reports
-
-      - name: Upload test results
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
-        if: always()
-        with:
-          name: test-reports
-          path: ./test-reports
 
       - name: Report test results
         uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5 # v1.9.1
-        if: always()
+        if: ${{ needs.check-test-secrets.outputs.available == 'true' && !cancelled() }}
         with:
           name: test-reports
           path: ./test-reports/*
           reporter: java-junit
-          fail-on-error: true # fail the workflow if tests failed
+          fail-on-error: true
