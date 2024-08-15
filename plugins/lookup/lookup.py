@@ -132,6 +132,12 @@ STATE_FILE_DIR_ERROR: str = (
     "The state file directory specified could not be created: '{}' "
     "Please ensure that you have permission to create a directory at {}"
 )
+LOGIN_ACCESS_TOKEN_ERROR: str = "Failed to login with access token: '{}'"
+
+# warnings
+DEPRECATED_ACCESS_TOKEN_LOGIN_WARNING: str = (
+    "Using older `access_token_login()` method. Please update to the latest version of bitwarden-sdk."
+)
 
 
 def is_url(url: str) -> bool:
@@ -382,10 +388,20 @@ class LookupModule(LookupBase):
             state_dir = create_state_dir(state_file_dir)
             state_file = str(state_dir / access_token.access_token_id)
             display.vv(f"state_file: {state_file}")
-            client.auth().login_access_token(access_token.str, state_file)
         except AnsibleError as e:
             display.error(STATE_FILE_DIR_ERROR.format(e, state_file_dir))
             raise AnsibleError(STATE_FILE_DIR_ERROR.format(e, state_file_dir)) from e
+
+        try:
+            try:
+                client.auth().login_access_token(access_token.str, state_file)
+            except AttributeError:
+                display.warning(DEPRECATED_ACCESS_TOKEN_LOGIN_WARNING)
+                client.access_token_login(access_token.str, state_file)
+        except Exception as e:
+            error_message = LOGIN_ACCESS_TOKEN_ERROR.format(e)
+            display.error(error_message)
+            raise AnsibleError(error_message) from e
 
         try:
             secret: SecretResponse = client.secrets().get(secret_id)
