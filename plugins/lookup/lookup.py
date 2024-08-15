@@ -382,7 +382,7 @@ class LookupModule(LookupBase):
             state_dir = create_state_dir(state_file_dir)
             state_file = str(state_dir / access_token.access_token_id)
             display.vv(f"state_file: {state_file}")
-            client.access_token_login(access_token.str, state_file)
+            client.auth().login_access_token(access_token.str, state_file)
         except AnsibleError as e:
             display.error(STATE_FILE_DIR_ERROR.format(e, state_file_dir))
             raise AnsibleError(STATE_FILE_DIR_ERROR.format(e, state_file_dir)) from e
