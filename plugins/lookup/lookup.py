@@ -219,10 +219,10 @@ class AccessToken:
             self._encryption_key = base64.b64decode(encryption_key)
         except ValueError:
             display.error(
-                "Invalid access token envryption key. Should be base64-encoded"
+                "Invalid access token encryption key. Should be base64-encoded"
             )
             raise AccessTokenInvalidError(
-                "Invalid access token envryption key. Should be base64-encoded"
+                "Invalid access token encryption key. Should be base64-encoded"
             )
 
         if len(self._encryption_key) != 16:
