@@ -391,6 +391,6 @@ class LookupModule(LookupBase):
             secret_data: str = secret.to_dict()["data"][field]
             return [secret_data]
         except Exception as e:
-            error_message = f"{SECRET_LOOKUP_ERROR.format(secret_id)}: {e}"
+            error_message = SECRET_LOOKUP_ERROR.format(secret_id, e)
             display.error(error_message)
             raise AnsibleLookupError(error_message) from e
