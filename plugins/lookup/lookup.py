@@ -43,6 +43,7 @@ options:
     type: string
   state_file_dir:
     description: Directory to store state file for authentication.
+    default: ~/.config/bitwarden-sm-ansible
     required: False
     type: string
   field:
@@ -64,7 +65,7 @@ EXAMPLES = """
     msg: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', access_token='<your-access-token>') }}"
 - name: Use a state file for authentication
   ansible.builtin.debug:
-    msg: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', state_file_dir='~/.config/bitwarden-sm') }}"
+    msg: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', state_file_dir='~/.config/bitwarden-sm-ansible') }}"
 """
 
 RETURN = """
@@ -160,11 +161,13 @@ def validate_url(url: str, url_type: str) -> None:
         raise AnsibleError(INVALID_URL_ERROR.format(url_type, url))
 
 
-def create_state_dir(state_file_dir: str):
+def create_state_dir(state_file_dir: str) -> Path:
     try:
+        state_file_dir = os.path.expanduser(state_file_dir)
         display.vv(f"Creating state directory: {state_file_dir}")
         state_dir = Path(state_file_dir)
         state_dir.mkdir(parents=True, exist_ok=True)
+        return state_dir
     except PermissionError:
         raise AnsibleError(
             f"You do not have permission to create a directory at {state_file_dir}"
@@ -216,10 +219,10 @@ class AccessToken:
             self._encryption_key = base64.b64decode(encryption_key)
         except ValueError:
             display.error(
-                "Invalid access token envryption key. Should be base64-encoded"
+                "Invalid access token encryption key. Should be base64-encoded"
             )
             raise AccessTokenInvalidError(
-                "Invalid access token envryption key. Should be base64-encoded"
+                "Invalid access token encryption key. Should be base64-encoded"
             )
 
         if len(self._encryption_key) != 16:
@@ -376,12 +379,10 @@ class LookupModule(LookupBase):
         )
 
         try:
-            if not state_file_dir:
-                client.access_token_login(access_token.str)
-            else:
-                create_state_dir(state_file_dir)
-                state_file = str(Path(state_file_dir, access_token.access_token_id))
-                client.access_token_login(access_token.str, state_file)
+            state_dir = create_state_dir(state_file_dir)
+            state_file = str(state_dir / access_token.access_token_id)
+            display.vv(f"state_file: {state_file}")
+            client.access_token_login(access_token.str, state_file)
         except AnsibleError as e:
             display.error(STATE_FILE_DIR_ERROR.format(e, state_file_dir))
             raise AnsibleError(STATE_FILE_DIR_ERROR.format(e, state_file_dir)) from e
