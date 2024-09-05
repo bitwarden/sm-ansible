@@ -7,6 +7,20 @@ adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+-   Non-default API and Identity URLs being ignored (#45)
+
+-   String interpolation error on failure to lookup secret by access token (#33)
+
+### Changed
+
+-   Use state file by default (#51)
+
+-   Display a deprecation warning if using `bitwarden-sdk==0.1.0` Python package (#53)
+
+## [1.0.0] - 2024-03
+
 ### Added
 
 -   Ansible lookup plugin for fetching secrets from Bitwarden Secrets Manager.
