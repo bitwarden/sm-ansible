@@ -10,5 +10,5 @@
 # DevOps for Actions and other workflow changes
 .github/workflows @bitwarden/dept-devops
 
-# Owners for automation to work
-galaxy.yml @bitwarden/team-secrets-manager-dev @bitwarden/automation-users
+# BRE Automations
+galaxy.yml
