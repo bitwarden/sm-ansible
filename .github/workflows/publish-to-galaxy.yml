@@ -15,7 +15,7 @@ on:
           - Dry Run
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
