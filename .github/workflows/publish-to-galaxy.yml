@@ -45,6 +45,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   publish:
+    name: Publish
     runs-on: ubuntu-22.04
     needs: validate
     steps:
