@@ -76,5 +76,5 @@ jobs:
         env:
           _VERSION: ${{ needs.validate.outputs.version }}
         run: |
-          ansible-galaxy collection bitwarden-secrets-$_VERSION.tar.gz \
-          --api-key ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-api-key }}
+          ansible-galaxy collection publish --token ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-api-key }} \
+            bitwarden-secrets-$_VERSION.tar.gz
