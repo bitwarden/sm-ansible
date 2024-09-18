@@ -15,7 +15,7 @@ on:
           - Dry Run
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -69,12 +69,12 @@ jobs:
           name: v${{ needs.validate.outputs.version }}
           body: "<insert release notes here>"
           draft: true
-          artifact: bitwarden-secrets-${{ needs.validate.outputs.version }}.tar.gz
+          artifacts: bitwarden-secrets-${{ needs.validate.outputs.version }}.tar.gz
 
       - name: Publish to Ansible Galaxy
         if: ${{ inputs.release_type != 'Dry Run' }}
         env:
           _VERSION: ${{ needs.validate.outputs.version }}
         run: |
-          ansible-galaxy collection bitwarden-secrets-$_VERSION.tar.gz \
-          --api-key ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-api-key }}
+          ansible-galaxy collection publish --token ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-api-key }} \
+            bitwarden-secrets-$_VERSION.tar.gz
