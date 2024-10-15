@@ -1,5 +1,5 @@
 ---
-name: Run tests
+name: Testing
 
 on:
   workflow_dispatch:
@@ -13,42 +13,60 @@ on:
   push:
     branches:
       - "main"
-      - "rc"
-      - "hotfix-rc-*"
   pull_request:
 
-defaults:
-  run:
-    shell: bash
-
 jobs:
-  unit_tests:
-    name: Run unit tests
+  check-test-secrets:
+    name: Check for test secrets
     runs-on: ubuntu-22.04
+    outputs:
+      available: ${{ steps.check-test-secrets.outputs.available }}
+    permissions:
+      contents: read
+
     steps:
-      - name: Login to Azure - CI Subscription
+      - name: Check
+        id: check-test-secrets
+        run: |
+          if [ "${{ secrets.CODECOV_TOKEN }}" != '' ]; then
+            echo "available=true" >> $GITHUB_OUTPUT;
+          else
+            echo "available=false" >> $GITHUB_OUTPUT;
+          fi
+
+  testing:
+    name: Run tests
+    runs-on: ubuntu-22.04
+    needs: check-test-secrets
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Log in to Azure
         uses: Azure/login@e15b166166a8746d1a47596803bd8c1b595455cf # v1.6.0
         with:
           creds: ${{ secrets.AZURE_KV_CI_SERVICE_PRINCIPAL }}
 
-      - name: Retrieve github PAT secrets
+      - name: Retrieve GitHub PAT secrets
         id: retrieve-secret-pat
         uses: bitwarden/gh-actions/get-keyvault-secrets@main
         with:
           keyvault: "bitwarden-ci"
           secrets: "github-pat-bitwarden-devops-bot-repo-scope"
 
-      - name: Checkout repo
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - name: Check out repo
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           ref: ${{ github.event.inputs.ansible_branch || github.head_ref }}
 
       - name: Setup Python
-        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
+        uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
         with:
           python-version: "3.9"
 
-      - name: Make Artifact Dir
+      - name: Create artifact directory
         run: mkdir ./dist
 
       - name: Download Python SDK
@@ -68,21 +86,14 @@ jobs:
           pip install unittest-xml-reporting
           pip install --no-index --find-links=dist bitwarden_sdk
 
-      - name: Run unittest suite
+      - name: Run unit test suite
         run: python -m xmlrunner discover -v -s ./tests/unit -p "*tests.py" --output=./test-reports
-
-      - name: Upload test results
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
-        if: always()
-        with:
-          name: test-reports
-          path: ./test-reports
 
       - name: Report test results
         uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5 # v1.9.1
-        if: always()
+        if: ${{ needs.check-test-secrets.outputs.available == 'true' && !cancelled() }}
         with:
           name: test-reports
           path: ./test-reports/*
           reporter: java-junit
-          fail-on-error: true # fail the workflow if tests failed
+          fail-on-error: true

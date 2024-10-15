@@ -1,5 +1,6 @@
+---
 name: Publish to Ansible Galaxy
-run-name: Publish to Ansible Galaxy ${{ inputs.release_type }}
+run-name: Publish to Ansible Galaxy - ${{ inputs.release_type }}
 
 on:
   workflow_dispatch:
@@ -14,7 +15,7 @@ on:
           - Dry Run
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -24,17 +25,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
-
-      - name: Branch check
-        if: ${{ github.event.inputs.release_type != 'Dry Run' }}
-        run: |
-          if [[ "$GITHUB_REF" != "refs/heads/rc" ]] && [[ "$GITHUB_REF" != "refs/heads/hotfix-rc" ]]; then
-            echo "==================================="
-            echo "[!] Can only release from the 'rc' or 'hotfix-rc' branches"
-            echo "==================================="
-            exit 1
-          fi
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
 
       - name: Get version
         id: version
@@ -44,10 +35,11 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   publish:
+    name: Publish
     runs-on: ubuntu-22.04
     needs: validate
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
 
       - name: Login to Azure - CI Subscription
         uses: Azure/login@e15b166166a8746d1a47596803bd8c1b595455cf # v1.6.0
@@ -70,17 +62,19 @@ jobs:
         run: ansible-galaxy collection build . --force
 
       - name: Create release
-        if: ${{ github.event.inputs.release_type != 'Dry Run' }}
+        if: ${{ inputs.release_type != 'Dry Run' }}
         uses: ncipollo/release-action@2c591bcc8ecdcd2db72b97d6147f871fcd833ba5 # v1.14.0
         with:
           tag: v${{ needs.validate.outputs.version }}
           name: v${{ needs.validate.outputs.version }}
           body: "<insert release notes here>"
           draft: true
-          artifact: bitwarden-secrets-${{ needs.validate.outputs.version }}.tar.gz
+          artifacts: bitwarden-secrets-${{ needs.validate.outputs.version }}.tar.gz
 
       - name: Publish to Ansible Galaxy
-        if: ${{ github.event.inputs.release_type != 'Dry Run' }}
+        if: ${{ inputs.release_type != 'Dry Run' }}
         env:
           _VERSION: ${{ needs.validate.outputs.version }}
-        run: ansible-galaxy collection bitwarden-secrets-$_VERSION.tar.gz --api-key ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-api-key }}
+        run: |
+          ansible-galaxy collection publish --token ${{ steps.retrieve-secret-pat.outputs.ansible-galaxy-api-key }} \
+            bitwarden-secrets-$_VERSION.tar.gz

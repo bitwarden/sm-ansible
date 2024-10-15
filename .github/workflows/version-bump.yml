@@ -8,10 +8,6 @@ on:
       version_number:
         description: "New version (example: '1.1.0')"
         required: true
-      cut_rc_branch:
-        description: "Cut RC branch?"
-        default: true
-        type: boolean
 
 jobs:
   bump_version:
@@ -33,7 +29,7 @@ jobs:
             github-pat-bitwarden-devops-bot-repo-scope"
 
       - name: Checkout Branch
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
 
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@01dd5d3ca463c7f10f7f4f7b4f177225ac661ee4 # v6.1.0
@@ -55,8 +51,7 @@ jobs:
       ########################
 
       - name: Bump Version
-        run: |
-          sed -i "s/version: '[0-9]\.[0-9]\.[0-9]'/version: '${{ inputs.version_number }}'/" ./sm-ansible/galaxy.yml
+        run: yq -i '.version = "${{ inputs.version_number }}"' 'galaxy.yml'
 
       ############################
       # VERSION BUMP SECTION END #
@@ -119,38 +114,15 @@ jobs:
           echo "pr_number=${PR_URL##*/}" >> $GITHUB_OUTPUT
 
       - name: Approve PR
+        if: ${{ steps.version-changed.outputs.changes_to_commit == 'TRUE' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.create-pr.outputs.pr_number }}
         run: gh pr review $PR_NUMBER --approve
 
       - name: Merge PR
+        if: ${{ steps.version-changed.outputs.changes_to_commit == 'TRUE' }}
         env:
           GH_TOKEN: ${{ steps.retrieve-secrets.outputs.github-pat-bitwarden-devops-bot-repo-scope }}
           PR_NUMBER: ${{ steps.create-pr.outputs.pr_number }}
         run: gh pr merge $PR_NUMBER --squash --auto --delete-branch
-
-  cut_rc:
-    name: Cut RC branch
-    needs: bump_version
-    if: ${{ inputs.cut_rc_branch == true }}
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout Branch
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
-        with:
-          ref: main
-
-      - name: Check if RC branch exists
-        run: |
-          remote_rc_branch_check=$(git ls-remote --heads origin rc | wc -l)
-          if [[ "${remote_rc_branch_check}" -gt 0 ]]; then
-            echo "Remote RC branch exists."
-            echo "Please delete current RC branch before running again."
-            exit 1
-          fi
-
-      - name: Cut RC branch
-        run: |
-          git switch --quiet --create rc
-          git push --quiet --set-upstream origin rc

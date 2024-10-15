@@ -43,6 +43,7 @@ options:
     type: string
   state_file_dir:
     description: Directory to store state file for authentication.
+    default: ~/.config/bitwarden-sm-ansible
     required: False
     type: string
   field:
@@ -64,7 +65,7 @@ EXAMPLES = """
     msg: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', access_token='<your-access-token>') }}"
 - name: Use a state file for authentication
   ansible.builtin.debug:
-    msg: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', state_file_dir='~/.config/bitwarden-sm') }}"
+    msg: "{{ lookup('bitwarden.secrets.lookup', 'cdc0a886-6ad6-4136-bfd4-b04f01149173', state_file_dir='~/.config/bitwarden-sm-ansible') }}"
 """
 
 RETURN = """
@@ -104,6 +105,7 @@ if BW_SDK_IMPORT_ERROR:
     )
 
 # default URLs
+BITWARDEN_BASE_URL: str = "https://vault.bitwarden.com"
 BITWARDEN_API_URL: str = "https://api.bitwarden.com"
 BITWARDEN_IDENTITY_URL: str = "https://identity.bitwarden.com"
 
@@ -129,6 +131,12 @@ SECRET_LOOKUP_ERROR: str = (
 STATE_FILE_DIR_ERROR: str = (
     "The state file directory specified could not be created: '{}' "
     "Please ensure that you have permission to create a directory at {}"
+)
+LOGIN_ACCESS_TOKEN_ERROR: str = "Failed to login with access token: '{}'"
+
+# warnings
+DEPRECATED_ACCESS_TOKEN_LOGIN_WARNING: str = (
+    "Using older `access_token_login()` method. Please update to the latest version of bitwarden-sdk."
 )
 
 
@@ -159,11 +167,13 @@ def validate_url(url: str, url_type: str) -> None:
         raise AnsibleError(INVALID_URL_ERROR.format(url_type, url))
 
 
-def create_state_dir(state_file_dir: str):
+def create_state_dir(state_file_dir: str) -> Path:
     try:
+        state_file_dir = os.path.expanduser(state_file_dir)
         display.vv(f"Creating state directory: {state_file_dir}")
         state_dir = Path(state_file_dir)
         state_dir.mkdir(parents=True, exist_ok=True)
+        return state_dir
     except PermissionError:
         raise AnsibleError(
             f"You do not have permission to create a directory at {state_file_dir}"
@@ -215,10 +225,10 @@ class AccessToken:
             self._encryption_key = base64.b64decode(encryption_key)
         except ValueError:
             display.error(
-                "Invalid access token envryption key. Should be base64-encoded"
+                "Invalid access token encryption key. Should be base64-encoded"
             )
             raise AccessTokenInvalidError(
-                "Invalid access token envryption key. Should be base64-encoded"
+                "Invalid access token encryption key. Should be base64-encoded"
             )
 
         if len(self._encryption_key) != 16:
@@ -270,6 +280,9 @@ class LookupModule(LookupBase):
         base_url = self.get_option("base_url")
         api_url = self.get_option("api_url")
         identity_url = self.get_option("identity_url")
+        base_url, api_url, identity_url = self.sanitize_urls(
+            base_url, api_url, identity_url
+        )
         api_url, identity_url = self.get_urls(base_url, api_url, identity_url)
         self.validate_urls(api_url, identity_url)
 
@@ -295,22 +308,38 @@ class LookupModule(LookupBase):
         )
 
     @staticmethod
-    def get_urls(base_url: str, api_url: str, identity_url: str) -> tuple[str, str]:
-        if base_url:
-            base_url = base_url.rstrip("/")
+    def sanitize_urls(*args):
+        sanitized_inputs = []
+        for input_var in args:
+            input_var = str(input_var).strip()
+            input_var = input_var.rstrip("/")
+            sanitized_inputs.append(input_var)
+        return sanitized_inputs
+
+    @staticmethod
+    def get_urls(
+        base_url: str = None, api_url: str = None, identity_url: str = None
+    ) -> tuple[str, str]:
+        if base_url != BITWARDEN_BASE_URL:
             api_url = f"{base_url}/api"
             identity_url = f"{base_url}/identity"
-        elif api_url and identity_url:
-            return api_url, identity_url
-        elif not base_url and not api_url and not identity_url:
-            api_url = BITWARDEN_API_URL
-            identity_url = BITWARDEN_IDENTITY_URL
+            return (api_url, identity_url)
         else:
-            display.error(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
-            raise AnsibleError(
-                API_IDENTITY_URL_ERROR.format(api_url, identity_url)
-            ) from None
-        return api_url, identity_url
+            if (
+                api_url != BITWARDEN_API_URL and identity_url == BITWARDEN_IDENTITY_URL
+            ) or (
+                api_url == BITWARDEN_API_URL and identity_url != BITWARDEN_IDENTITY_URL
+            ):
+                # unset the default URLs before throwing the error
+                if api_url == BITWARDEN_API_URL:
+                    api_url = None
+                if identity_url == BITWARDEN_IDENTITY_URL:
+                    identity_url = None
+                raise AnsibleError(API_IDENTITY_URL_ERROR.format(api_url, identity_url))
+            return (
+                api_url,
+                identity_url,
+            )
 
     @staticmethod
     def validate_urls(api_url, identity_url) -> None:
@@ -356,21 +385,29 @@ class LookupModule(LookupBase):
         )
 
         try:
-            if not state_file_dir:
-                client.access_token_login(access_token.str)
-            else:
-                create_state_dir(state_file_dir)
-                state_file = str(Path(state_file_dir, access_token.access_token_id))
-                client.access_token_login(access_token.str, state_file)
+            state_dir = create_state_dir(state_file_dir)
+            state_file = str(state_dir / access_token.access_token_id)
+            display.vv(f"state_file: {state_file}")
         except AnsibleError as e:
             display.error(STATE_FILE_DIR_ERROR.format(e, state_file_dir))
             raise AnsibleError(STATE_FILE_DIR_ERROR.format(e, state_file_dir)) from e
+
+        try:
+            try:
+                client.auth().login_access_token(access_token.str, state_file)
+            except AttributeError:
+                display.warning(DEPRECATED_ACCESS_TOKEN_LOGIN_WARNING)
+                client.access_token_login(access_token.str, state_file)
+        except Exception as e:
+            error_message = LOGIN_ACCESS_TOKEN_ERROR.format(e)
+            display.error(error_message)
+            raise AnsibleError(error_message) from e
 
         try:
             secret: SecretResponse = client.secrets().get(secret_id)
             secret_data: str = secret.to_dict()["data"][field]
             return [secret_data]
         except Exception as e:
-            error_message = f"{SECRET_LOOKUP_ERROR.format(secret_id)}: {e}"
+            error_message = SECRET_LOOKUP_ERROR.format(secret_id, e)
             display.error(error_message)
             raise AnsibleLookupError(error_message) from e
