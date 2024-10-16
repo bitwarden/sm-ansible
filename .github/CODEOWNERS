@@ -11,9 +11,7 @@
 .github/workflows/publish-to-galaxy.yml @bitwarden/dept-bre
 
 # Shared workflows ownership
-.github/workflows/version-bump.yml @bitwarden/dept-bre
-
-.github/workflows/version-bump.yml @bitwarden/team-secrets-manager-dev
+.github/workflows/version-bump.yml @bitwarden/dept-bre @bitwarden/team-secrets-manager-dev
 
 # BRE Automations
 galaxy.yml
