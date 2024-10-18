@@ -1,4 +1,3 @@
----
 name: Version Bump
 run-name: Version Bump - v${{ inputs.version_number }}
 
