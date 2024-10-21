@@ -7,8 +7,11 @@
 # Default file owners
 * @bitwarden/team-secrets-manager-dev
 
-# DevOps for Actions and other workflow changes
-.github/workflows @bitwarden/dept-devops
+## BRE team owns these workflows ##
+.github/workflows/publish-to-galaxy.yml @bitwarden/dept-bre
+
+# Shared workflows ownership
+.github/workflows/version-bump.yml @bitwarden/dept-bre @bitwarden/team-secrets-manager-dev
 
 # BRE Automations
 galaxy.yml
