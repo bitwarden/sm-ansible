@@ -13,12 +13,11 @@ on:
           - Release
           - Dry Run
 
-permissions:
-  contents: write
-
 jobs:
   validate:
     name: Setup
+    permissions:
+      contents: read
     runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -41,7 +40,8 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Azure Login
         id: azure-login
