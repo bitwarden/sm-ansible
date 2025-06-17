@@ -12,6 +12,10 @@ jobs:
   bump_version:
     name: "Bump Version to v${{ inputs.version_number }}"
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     steps:
       - name: Login to Azure - CI Subscription
         uses: Azure/login@e15b166166a8746d1a47596803bd8c1b595455cf # v1.6.0
