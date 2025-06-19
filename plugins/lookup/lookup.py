@@ -205,8 +205,8 @@ class AccessToken:
             display.error("No access token provided")
             raise AccessTokenInvalidError("No access token provided")
         try:
-            first_part, encryption_key = self._access_token.split(":")
-            version, access_token_id, client_secret = first_part.split(".")
+            _, encryption_key = self._access_token.split(":")
+            version, access_token_id, client_secret = encryption_key.lstrip().split(".")
         except ValueError:
             display.error("Invalid access token format")
             raise AccessTokenInvalidError("Invalid access token format")
