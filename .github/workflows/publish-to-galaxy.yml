@@ -13,12 +13,11 @@ on:
           - Release
           - Dry Run
 
-permissions:
-  contents: write
-
 jobs:
   validate:
     name: Setup
+    permissions:
+      contents: read
     runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -37,14 +36,19 @@ jobs:
     name: Publish
     runs-on: ubuntu-22.04
     needs: validate
+    permissions:
+      contents: write
+      id-token: write
     steps:
-      - name: Checkout repo
+      - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Login to Azure - CI Subscription
-        uses: Azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
+      - name: Log in to Azure
+        uses: bitwarden/gh-actions/azure-login@main
         with:
-          creds: ${{ secrets.AZURE_KV_CI_SERVICE_PRINCIPAL }}
+          subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+          client_id: ${{ secrets.AZURE_CLIENT_ID }}
 
       - name: Retrieve github PAT secrets
         id: retrieve-secret-pat
@@ -52,6 +56,9 @@ jobs:
         with:
           keyvault: "bitwarden-ci"
           secrets: "ansible-galaxy-api-key"
+
+      - name: Log out from Azure
+        uses: bitwarden/gh-actions/azure-logout@main
 
       - name: Install dependencies
         run: |
