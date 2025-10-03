@@ -17,6 +17,8 @@ jobs:
       pull-requests: write
       id-token: write
       actions: read
+    env:
+      _VERSION: ${{ inputs.version_number }}
     steps:
       - name: Log in to Azure
         uses: bitwarden/gh-actions/azure-login@main
@@ -39,6 +41,8 @@ jobs:
 
       - name: Checkout Branch
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: true
 
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@cb9bde2e2525e640591a934b1fd28eef1dcaf5e5 # v6.2.0
@@ -51,16 +55,16 @@ jobs:
       - name: Create Version Branch
         id: create-branch
         run: |
-          NAME=version_bump_${{ github.ref_name }}_${{ inputs.version_number }}
-          git switch -c $NAME
-          echo "name=$NAME" >> $GITHUB_OUTPUT
+          NAME=version_bump_${GITHUB_REF_NAME}_${_VERSION}
+          git switch -c "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
 
       ########################
       # VERSION BUMP SECTION #
       ########################
 
       - name: Bump Version
-        run: yq -i '.version = "${{ inputs.version_number }}"' 'galaxy.yml'
+        run: yq -i ".version = \"${_VERSION}\"" galaxy.yml
 
       ############################
       # VERSION BUMP SECTION END #
@@ -75,9 +79,9 @@ jobs:
         id: version-changed
         run: |
           if [ -n "$(git status --porcelain)" ]; then
-            echo "changes_to_commit=TRUE" >> $GITHUB_OUTPUT
+            echo "changes_to_commit=TRUE" >> "$GITHUB_OUTPUT"
           else
-            echo "changes_to_commit=FALSE" >> $GITHUB_OUTPUT
+            echo "changes_to_commit=FALSE" >> "$GITHUB_OUTPUT"
             echo "No changes to commit!";
           fi
 
@@ -89,13 +93,13 @@ jobs:
 
       - name: Commit files
         if: ${{ steps.version-changed.outputs.changes_to_commit == 'TRUE' }}
-        run: git commit -m "Bumped version to ${{ inputs.version_number }}" -a
+        run: git commit -m "Bumped version to ${_VERSION}" -a
 
       - name: Push changes
         if: ${{ steps.version-changed.outputs.changes_to_commit == 'TRUE' }}
         env:
           PR_BRANCH: ${{ steps.create-branch.outputs.name }}
-        run: git push -u origin $PR_BRANCH
+        run: git push -u origin "$PR_BRANCH"
 
       - name: Create Version PR
         if: ${{ steps.version-changed.outputs.changes_to_commit == 'TRUE' }}
@@ -119,19 +123,19 @@ jobs:
               - [X] Other
 
               ## Objective
-              Automated version bump to ${{ inputs.version_number }}")
-          echo "pr_number=${PR_URL##*/}" >> $GITHUB_OUTPUT
+              Automated version bump to ${_VERSION}")
+          echo "pr_number=${PR_URL##*/}" >> "$GITHUB_OUTPUT"
 
       - name: Approve PR
         if: ${{ steps.version-changed.outputs.changes_to_commit == 'TRUE' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.create-pr.outputs.pr_number }}
-        run: gh pr review $PR_NUMBER --approve
+        run: gh pr review "$PR_NUMBER" --approve
 
       - name: Merge PR
         if: ${{ steps.version-changed.outputs.changes_to_commit == 'TRUE' }}
         env:
           GH_TOKEN: ${{ steps.retrieve-secrets.outputs.github-pat-bitwarden-devops-bot-repo-scope }}
           PR_NUMBER: ${{ steps.create-pr.outputs.pr_number }}
-        run: gh pr merge $PR_NUMBER --squash --auto --delete-branch
+        run: gh pr merge "$PR_NUMBER" --squash --auto --delete-branch
