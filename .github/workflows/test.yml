@@ -62,7 +62,7 @@ jobs:
           workflow: build-python-wheels.yml
           workflow_conclusion: success
           path: dist
-          repo: bitwarden/sdk
+          repo: bitwarden/sdk-sm
           branch: ${{ github.event.inputs.sdk_branch || 'main' }}
           github_token: ${{ steps.retrieve-secret-pat.outputs.github-pat-bitwarden-devops-bot-repo-scope }}
 
