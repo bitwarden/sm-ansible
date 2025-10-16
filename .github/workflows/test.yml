@@ -40,7 +40,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ansible maturin unittest-xml-reporting
-          pip install --index-url https://test.pypi.org/simple/ --pre bitwarden_sdk>1.0.0
+          pip install --extra-index-url https://test.pypi.org/simple/ --pre bitwarden_sdk>1.0.0
 
       - name: Run unit test suite
         run: python -m xmlrunner discover -v -s ./tests/unit -p "*tests.py" --output=./test-reports
