@@ -4,6 +4,9 @@
 #
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
+# Default owners
+* @bitwarden/team-secrets-manager-dev
+
 ## BRE team owns these workflows ##
 .github/workflows/publish-to-galaxy.yml @bitwarden/dept-bre
 .github/workflows/version-bump.yml @bitwarden/dept-bre
