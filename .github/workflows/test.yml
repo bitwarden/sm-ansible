@@ -40,7 +40,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ansible dateutils maturin unittest-xml-reporting
-          pip install --extra-index-url https://test.pypi.org/simple/ --only-binary=bitwarden_sdk --pre bitwarden_sdk>1.0.0
+
+          # Dependencies are needed from PyPI during install, so check for dev pre-release versions from only TestPyPI to use during install
+          echo "Getting latest pre-release version of bitwarden_sdk from TestPyPI..."
+          latest_version=$(pip index versions --index-url https://test.pypi.org/simple/ --only-binary=bitwarden_sdk bitwarden_sdk --pre --json | jq -r .latest)
+          echo "Latest version found: $latest_version"
+          if [[ ! "$latest_version" =~ \.dev[0-9]+$ ]]; then
+            echo "Expected .dev pre-release version but found: $latest_version"
+            exit 1
+          fi
+          pip install --extra-index-url https://test.pypi.org/simple/ --only-binary=bitwarden_sdk --pre "bitwarden_sdk==$latest_version"
 
       - name: Run unit test suite
         run: python -m xmlrunner discover -v -s ./tests/unit -p "*tests.py" --output=./test-reports
