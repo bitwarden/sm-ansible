@@ -6,9 +6,6 @@ on:
       ansible_branch:
         description: "Branch to test"
         default: "main"
-      sdk_branch:
-        description: "The branch to download the Python SDK from"
-        required: true
   push:
     branches:
       - "main"
@@ -25,23 +22,6 @@ jobs:
       id-token: write
 
     steps:
-      - name: Log in to Azure
-        uses: bitwarden/gh-actions/azure-login@main
-        with:
-          subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          tenant_id: ${{ secrets.AZURE_TENANT_ID }}
-          client_id: ${{ secrets.AZURE_CLIENT_ID }}
-
-      - name: Retrieve GitHub PAT secrets
-        id: retrieve-secret-pat
-        uses: bitwarden/gh-actions/get-keyvault-secrets@main
-        with:
-          keyvault: "bitwarden-ci"
-          secrets: "github-pat-bitwarden-devops-bot-repo-scope"
-
-      - name: Log out from Azure
-        uses: bitwarden/gh-actions/azure-logout@main
-
       - name: Check out repo
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
@@ -56,22 +36,20 @@ jobs:
       - name: Create artifact directory
         run: mkdir ./dist
 
-      - name: Download Python SDK
-        uses: bitwarden/gh-actions/download-artifacts@main
-        with:
-          workflow: build-python-wheels.yml
-          workflow_conclusion: success
-          path: dist
-          repo: bitwarden/sdk
-          branch: ${{ github.event.inputs.sdk_branch || 'main' }}
-          github_token: ${{ steps.retrieve-secret-pat.outputs.github-pat-bitwarden-devops-bot-repo-scope }}
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install unittest-xml-reporting
-          pip install --no-index --find-links=dist bitwarden_sdk
+          pip install ansible dateutils maturin unittest-xml-reporting
+
+          # Dependencies are needed from PyPI during install, so check for dev pre-release versions from only TestPyPI to use during install
+          echo "Getting latest pre-release version of bitwarden_sdk from TestPyPI..."
+          latest_version=$(pip index versions --index-url https://test.pypi.org/simple/ --only-binary=bitwarden_sdk bitwarden_sdk --pre --json | jq -r .latest)
+          echo "Latest version found: $latest_version"
+          if [[ ! "$latest_version" =~ \.dev[0-9]+$ ]]; then
+            echo "Expected .dev pre-release version but found: $latest_version"
+            exit 1
+          fi
+          pip install --extra-index-url https://test.pypi.org/simple/ --only-binary=bitwarden_sdk --pre "bitwarden_sdk==$latest_version"
 
       - name: Run unit test suite
         run: python -m xmlrunner discover -v -s ./tests/unit -p "*tests.py" --output=./test-reports
