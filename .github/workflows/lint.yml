@@ -22,7 +22,7 @@ jobs:
         with:
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
-          node-version: "22.22.0"
+          node-version: "24.13.1"
 
       - name: Run linter
         run: |
