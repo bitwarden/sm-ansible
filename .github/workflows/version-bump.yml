@@ -13,10 +13,9 @@ jobs:
     name: "Bump Version to v${{ inputs.version_number }}"
     runs-on: ubuntu-22.04
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
       id-token: write
-      actions: read
     env:
       _VERSION: ${{ inputs.version_number }}
     steps:
@@ -28,29 +27,28 @@ jobs:
           client_id: ${{ secrets.AZURE_CLIENT_ID }}
 
       - name: Retrieve secrets
-        id: retrieve-secrets
+        id: retrieve-secret
         uses: bitwarden/gh-actions/get-keyvault-secrets@main
         with:
-          keyvault: "bitwarden-ci"
-          secrets: "github-gpg-private-key,
-            github-gpg-private-key-passphrase,
-            github-pat-bitwarden-devops-bot-repo-scope"
+          keyvault: gh-org-bitwarden
+          secrets: "BW-GHAPP-ID,BW-GHAPP-KEY"
 
       - name: Log out from Azure
         uses: bitwarden/gh-actions/azure-logout@main
+
+      - name: Generate GH App token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        id: app-token
+        with:
+          app-id: ${{ steps.retrieve-secret.outputs.BW-GHAPP-ID }}
+          private-key: ${{ steps.retrieve-secret.outputs.BW-GHAPP-KEY }}
+          owner: ${{ github.repository_owner }}
 
       - name: Checkout Branch
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: true
-
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec # v6.3.0
-        with:
-          gpg_private_key: ${{ steps.retrieve-secrets.outputs.github-gpg-private-key }}
-          passphrase: ${{ steps.retrieve-secrets.outputs.github-gpg-private-key-passphrase }}
-          git_user_signingkey: true
-          git_commit_gpgsign: true
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Create Version Branch
         id: create-branch
@@ -72,8 +70,8 @@ jobs:
 
       - name: Setup git
         run: |
-          git config --local user.email "106330231+bitwarden-devops-bot@users.noreply.github.com"
-          git config --local user.name "bitwarden-devops-bot"
+          git config --local user.email "178206702+bw-ghapp[bot]@users.noreply.github.com"
+          git config --local user.name "bw-ghapp[bot]"
 
       - name: Check if version changed
         id: version-changed
@@ -105,7 +103,7 @@ jobs:
         if: ${{ steps.version-changed.outputs.changes_to_commit == 'TRUE' }}
         id: create-pr
         env:
-          GH_TOKEN: ${{ steps.retrieve-secrets.outputs.github-pat-bitwarden-devops-bot-repo-scope }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_BRANCH: ${{ steps.create-branch.outputs.name }}
           TITLE: "Bump version to ${{ inputs.version_number }}"
         run: |
@@ -136,6 +134,6 @@ jobs:
       - name: Merge PR
         if: ${{ steps.version-changed.outputs.changes_to_commit == 'TRUE' }}
         env:
-          GH_TOKEN: ${{ steps.retrieve-secrets.outputs.github-pat-bitwarden-devops-bot-repo-scope }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ steps.create-pr.outputs.pr_number }}
         run: gh pr merge "$PR_NUMBER" --squash --auto --delete-branch
