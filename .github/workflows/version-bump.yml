@@ -69,6 +69,12 @@ jobs:
       # VERSION BUMP SECTION END #
       ############################
 
+      - name: Setup git
+        run: |
+          git config --local user.email "178206702+bw-ghapp[bot]@users.noreply.github.com"
+          git config --local user.name "bw-ghapp[bot]"
+
+
       - name: Check if version changed
         id: version-changed
         run: |
