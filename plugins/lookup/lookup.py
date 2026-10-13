@@ -29,6 +29,8 @@ options:
   base_url:
     description: Base url to use. If provided, api_url and identity_url will be ignored.
     default: https://vault.bitwarden.com
+    env:
+      - name: BWS_BASE_URL
     required: False
     type: string
   api_url:
