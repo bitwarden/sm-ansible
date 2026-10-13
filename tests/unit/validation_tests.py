@@ -5,6 +5,7 @@ sys.path.append("../..")
 from plugins.lookup.lookup import (
     AnsibleError,
     LookupModule,
+    is_retryable_secret_lookup_error,
     validate_url,
     BITWARDEN_BASE_URL,
     BITWARDEN_API_URL,
@@ -111,6 +112,42 @@ class TestValidators(unittest.TestCase):
             BITWARDEN_API_URL,
             self.identity_url,
         )
+
+    # retryable secret lookup error tests
+    def test_server_error_is_retryable(self):
+        """HTTP 5xx errors should be retried"""
+        error = Exception(
+            "Received error message from server: [503 Service Unavailable] upstream connect error"
+        )
+        self.assertTrue(is_retryable_secret_lookup_error(error))
+
+    def test_status_code_attribute_server_error_is_retryable(self):
+        """errors with a 5xx status_code attribute should be retried"""
+        error = Exception("server error")
+        error.status_code = 500
+        self.assertTrue(is_retryable_secret_lookup_error(error))
+
+    def test_client_error_is_not_retryable(self):
+        """HTTP 4xx errors should not be retried"""
+        error = Exception("Received error message from server: [404 Not Found]")
+        self.assertFalse(is_retryable_secret_lookup_error(error))
+
+    def test_upstream_connect_error_is_retryable(self):
+        """upstream connect errors should be retried without an HTTP code"""
+        error = Exception("upstream connect error or disconnect/reset before headers")
+        self.assertTrue(is_retryable_secret_lookup_error(error))
+
+    def test_connection_timeout_is_retryable(self):
+        """connection timeouts should be retried without an HTTP code"""
+        error = Exception("reset reason: connection timeout")
+        self.assertTrue(is_retryable_secret_lookup_error(error))
+
+    def test_secret_id_with_500_is_not_retryable(self):
+        """UUIDs containing 500 should not be mistaken for server errors"""
+        error = Exception(
+            "The requested secret could not be found: 'c5006dea-5285-4be0-95f5-b4c700d083e5'"
+        )
+        self.assertFalse(is_retryable_secret_lookup_error(error))
 
 
 if __name__ == "__main__":
