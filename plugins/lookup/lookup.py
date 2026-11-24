@@ -77,6 +77,8 @@ _list:
 
 import base64
 import os
+import re
+import time
 from pathlib import Path
 from urllib.parse import urlparse
 import uuid
@@ -128,11 +130,32 @@ SECRET_LOOKUP_ERROR: str = (
     "Please ensure that the machine account has access to the secret UUID provided. "
     "Original error: {}"
 )
+SECRET_LOOKUP_SERVER_ERROR: str = (
+    "The requested secret could not be retrieved after {} attempts due to a "
+    "transient server error: '{}'. Original error: {}"
+)
 STATE_FILE_DIR_ERROR: str = (
     "The state file directory specified could not be created: '{}' "
     "Please ensure that you have permission to create a directory at {}"
 )
 LOGIN_ACCESS_TOKEN_ERROR: str = "Failed to login with access token: '{}'"
+
+# Retry configuration for transient server-side errors returned by the SDK.
+SECRET_LOOKUP_MAX_ATTEMPTS: int = 10
+SECRET_LOOKUP_RETRY_DELAY_SECONDS: float = .5
+HTTP_5XX_ERROR_REGEX = re.compile(
+    r"(?:\[(5\d{2})\]|\bHTTP(?:/\d(?:\.\d)?)?\s+(5\d{2})\b|\bstatus(?:\s+code)?\D+(5\d{2})\b)",
+    re.IGNORECASE,
+)
+TRANSIENT_SERVER_ERROR_MESSAGES = [
+    "upstream connect error",
+    "disconnect/reset before headers",
+    "connection timeout",
+    "service unavailable",
+    "internal server error",
+    "bad gateway",
+    "gateway timeout",
+]
 
 # warnings
 DEPRECATED_ACCESS_TOKEN_LOGIN_WARNING: str = (
@@ -165,6 +188,18 @@ def is_valid_field(field: str) -> bool:
 def validate_url(url: str, url_type: str) -> None:
     if not is_url(url):
         raise AnsibleError(INVALID_URL_ERROR.format(url_type, url))
+
+
+def is_retryable_secret_lookup_error(error: Exception) -> bool:
+    """Return True for HTTP 5xx or transient server/gateway errors."""
+    status_code = getattr(error, "status_code", None) or getattr(error, "status", None)
+    if isinstance(status_code, int) and 500 <= status_code <= 599:
+        return True
+
+    error_message = str(error).lower()
+    return HTTP_5XX_ERROR_REGEX.search(error_message) is not None or any(
+        message in error_message for message in TRANSIENT_SERVER_ERROR_MESSAGES
+    )
 
 
 def create_state_dir(state_file_dir: str) -> Path:
@@ -403,11 +438,33 @@ class LookupModule(LookupBase):
             display.error(error_message)
             raise AnsibleError(error_message) from e
 
-        try:
-            secret: SecretResponse = client.secrets().get(secret_id)
-            secret_data: str = secret.to_dict()["data"][field]
-            return [secret_data]
-        except Exception as e:
-            error_message = SECRET_LOOKUP_ERROR.format(secret_id, e)
-            display.error(error_message)
-            raise AnsibleLookupError(error_message) from e
+        last_error = None
+        for attempt in range(1, SECRET_LOOKUP_MAX_ATTEMPTS + 1):
+            try:
+                secret: SecretResponse = client.secrets().get(secret_id)
+                secret_data: str = secret.to_dict()["data"][field]
+                return [secret_data]
+            except Exception as e:
+                last_error = e
+                if (
+                    attempt < SECRET_LOOKUP_MAX_ATTEMPTS
+                    and is_retryable_secret_lookup_error(e)
+                ):
+                    display.warning(
+                        "Secret lookup failed with a server error. "
+                        f"Retrying attempt {attempt + 1} of "
+                        f"{SECRET_LOOKUP_MAX_ATTEMPTS}: {e}"
+                    )
+                    retry_delay = SECRET_LOOKUP_RETRY_DELAY_SECONDS * 2 ** (attempt - 1)
+                    time.sleep(retry_delay)
+                    continue
+                break
+
+        if last_error and is_retryable_secret_lookup_error(last_error):
+            error_message = SECRET_LOOKUP_SERVER_ERROR.format(
+                SECRET_LOOKUP_MAX_ATTEMPTS, secret_id, last_error
+            )
+        else:
+            error_message = SECRET_LOOKUP_ERROR.format(secret_id, last_error)
+        display.error(error_message)
+        raise AnsibleLookupError(error_message) from last_error
